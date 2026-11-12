@@ -1047,9 +1047,27 @@ function payItems(p, keepOpen){
     <div class="mini" style="max-height:none"><table><thead><tr><th>#</th><th>หมายเลขใบงาน</th><th>วันที่เสร็จสิ้น</th><th>ประเภทใบงาน</th><th>ทะเบียนรถ</th><th class="num">ค่าขนส่ง</th><th class="num">ค่าอื่นๆ</th><th class="num">% หัก</th><th class="num">ยอดที่ควรจ่าย</th><th>ดำเนินการ</th></tr></thead><tbody>
     ${c.jobs.map((w,i) => `<tr><td>${i+1}</td><td>${esc(w.jobNo)}</td><td>${fdate(w.doneDate)}</td><td>${esc(w.type)}</td><td>${esc(w.plate)}</td><td class="num">${money(w.freight)}</td><td class="num">${money(w.other)}</td><td class="num">${fmtCell(num(w.deductPct),'pct')}</td><td class="num">${money(woPayable(w))}</td>
       <td class="act" style="position:static;box-shadow:none"><button class="btn sm blue" data-ie="${esc(w._id)}" ${locked?'disabled':''}>แก้ไข</button> <button class="btn sm red" data-id-del="${esc(w._id)}" ${locked?'disabled':''}>ลบ</button></td></tr>`).join('')}
-    </tbody><tfoot><tr><th colspan="8">รวม</th><th class="num">${money(c.base)}</th><th></th></tr></tfoot></table></div>`, buttons:[{label:'ปิด'}]});
+    </tbody><tfoot><tr><th colspan="8">รวม</th><th class="num">${money(c.base)}</th><th></th></tr></tfoot></table></div>
+    <div class="sec-title">ค่าปรับที่หัก (${c.fines.length})</div>
+    ${c.fines.length ? `<div class="mini" style="max-height:none"><table><thead><tr><th>วันที่</th><th>หมายเลขใบงาน</th><th>ประเภท</th><th>หมายเหตุ</th><th class="num">จำนวนเงิน</th><th>ดำเนินการ</th></tr></thead><tbody>${c.fines.map(f => `<tr><td>${fdate(f.date)}</td><td>${esc(f.jobNo)}</td><td>${esc(f.type)}</td><td>${esc(f.remark)}</td><td class="num">${money(f.amount)}</td><td><button class="btn sm red" data-rm="fines" data-rid="${esc(f._id)}" ${locked?'disabled':''}>เอาออกจากบิล</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">ไม่มี</p>'}
+    <div class="sec-title">เบิกล่วงหน้าที่หักคืน (${c.advs.length})</div>
+    ${c.advs.length ? `<div class="mini" style="max-height:none"><table><thead><tr><th>เลขที่เบิก</th><th>วันที่ขอเบิก</th><th>เหตุผล</th><th class="num">จำนวนเงิน</th><th>ดำเนินการ</th></tr></thead><tbody>${c.advs.map(a => `<tr><td>${esc(a.advNo)}</td><td>${fdate(a.reqDate)}</td><td>${esc(a.reason)}</td><td class="num">${money(a.amount)}</td><td><button class="btn sm red" data-rm="advances" data-rid="${esc(a._id)}" ${locked?'disabled':''}>เอาออกจากบิล</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">ไม่มี</p>'}`, buttons:[{label:'ปิด'}]});
   const reopen = () => { m.close(); payItems(p); };
   m.addEventListener('click', async e => {
+    const rb = e.target.closest('[data-rm]');
+    if (rb) {
+      const kind = rb.dataset.rm, isFine = kind === 'fines', x = S[kind].find(r => r._id === rb.dataset.rid); if (!x) return;
+      const ok = await confirmBox('เอาออกจากบิล', `<p>เอา${isFine ? 'ค่าปรับของใบงาน <b>' + esc(x.jobNo) + '</b>' : 'เบิกล่วงหน้า <b>' + esc(x.advNo) + '</b>'} (${money(x.amount)} บาท) ออกจากรายการชำระ <b>${esc(p.payNo)}</b> ?</p><p class="hint">รายการนี้จะกลับไปเป็นสถานะ "ยังไม่สร้าง" และหักเข้าบิลอื่นได้</p>`, 'เอาออก');
+      if (!ok) return;
+      try {
+        const fresh = payBy(p.payNo); if (!fresh || fresh.paid) throw new Error('รายการชำระนี้ชำระแล้ว แก้ไขไม่ได้');
+        const field = isFine ? 'fineIds' : 'advIds';
+        await put('payments', fresh._id, {...fresh, [field]: (fresh[field]||[]).filter(id => id !== x._id)});
+        await put(kind, x._id, {...x, payNo: ''});
+        toast('เอาออกจาก ' + p.payNo + ' แล้ว'); reopen();
+      } catch(err){ toast(err.code ? writeErr(err) : (err.message || 'ไม่สำเร็จ'), 'err'); }
+      return;
+    }
     const eb = e.target.closest('[data-ie]'), db = e.target.closest('[data-id-del]');
     if (eb) {
       const w = S.workorders.find(x => x._id === eb.dataset.ie); if (!w) return;
@@ -1201,6 +1219,38 @@ function payPay(p){
     }}]});
 }
 
+/* ===================== delete / cancel ===================== */
+async function delRecord(kind, r, label){
+  if (!guardWrite()) return;
+  const fresh = S[kind].find(x => x._id === r._id); if (!fresh) return;
+  if (fresh.payNo) return toast('ผูกกับรายการชำระ ' + fresh.payNo + ' แล้ว ลบไม่ได้ — เอาออกจากบิลก่อน', 'err');
+  const ok = await confirmBox('ลบรายการ', `<p>ลบ <b>${esc(label)}</b> ?</p><p class="hint">ลบแล้วกู้คืนไม่ได้</p>`, 'ลบ');
+  if (!ok) return;
+  try { await del(kind, r._id); SEL[kind] && SEL[kind].delete(r._id); toast('ลบ ' + label + ' แล้ว'); } catch(e){ toast(writeErr(e), 'err'); }
+}
+async function payCancel(p){
+  if (!guardWrite()) return;
+  const fresh = payBy(p.payNo); if (!fresh) return;
+  if (fresh.paid) return toast('รายการนี้ชำระแล้ว ต้องกด "ยกเลิกชำระ" ก่อน', 'err');
+  const jobs = S.workorders.filter(w => w.payNo === fresh.payNo), fines = S.fines.filter(f => f.payNo === fresh.payNo), advs = S.advances.filter(a => a.payNo === fresh.payNo);
+  const ok = await confirmBox('ยกเลิกบิล ' + fresh.payNo, `<p>ยกเลิกและลบรายการชำระ <b>${esc(fresh.payNo)}</b> ?</p><p class="hint">ใบงาน ${jobs.length} รายการ, ค่าปรับ ${fines.length} รายการ และเบิกล่วงหน้า ${advs.length} รายการ จะถูกปลดออกจากบิลและกลับไปเป็นสถานะ "ยังไม่สร้าง" (ตัวรายการไม่ถูกลบ)</p>`, 'ยกเลิกบิล');
+  if (!ok) return;
+  try {
+    const res = await runAll([...jobs.map(w => () => put('workorders', w._id, {...w, payNo:''})), ...fines.map(f => () => put('fines', f._id, {...f, payNo:''})), ...advs.map(a => () => put('advances', a._id, {...a, payNo:''}))]);
+    const bad = res.filter(r => !r.ok).length;
+    if (bad) return toast('ปลดรายการไม่สำเร็จ ' + bad + ' รายการ — บิลยังไม่ถูกลบ ลองอีกครั้ง', 'err');
+    await del('payments', fresh._id);
+    toast('ยกเลิกบิล ' + fresh.payNo + ' แล้ว');
+  } catch(e){ toast(writeErr(e), 'err'); }
+}
+async function payUnpay(p){
+  if (!guardWrite()) return;
+  const fresh = payBy(p.payNo); if (!fresh || !fresh.paid) return;
+  const ok = await confirmBox('ยกเลิกการชำระ ' + fresh.payNo, `<p>ยกเลิกการชำระของ <b>${esc(fresh.payNo)}</b> ?</p><p class="hint">ข้อมูลการชำระ (ยอดจ่ายจริง ${money(fresh.paid.actual)} บาท, วันที่ ${fdate(fresh.paid.date)}) จะถูกล้าง บิลกลับเป็น "รอชำระ" และแก้ไขค่าใช้จ่าย/ใบงานในบิลได้อีกครั้ง</p>`, 'ยกเลิกการชำระ');
+  if (!ok) return;
+  try { await put('payments', fresh._id, {...fresh, paid: null, unpaidAt: new Date().toISOString()}); toast('ยกเลิกการชำระ ' + fresh.payNo + ' แล้ว'); } catch(e){ toast(writeErr(e), 'err'); }
+}
+
 /* ===================== FLEETS ===================== */
 const FLEET_SECTIONS = () => [
   ['ข้อมูลพื้นฐาน', [{k:'code', label:'รหัสฟลีท', req:1}, {k:'name', label:'ชื่อฟลีท', req:1}, {k:'fleetType', label:'ประเภทฟลีท', list:'dl-fleettype'}, {k:'phone', label:'โทรศัพท์', type:'tel'},
@@ -1298,8 +1348,8 @@ const PAGES = {
     ],
     buttons:[['เพิ่มรายการ', ()=>woForm(), 'plus'], ['อัปโหลดรายการ', woUpload, 'up'], ['ดาวน์โหลด Excel', ()=>listExcel('workorders'), 'down'], ['สร้างรายการชำระ', woCreatePayment, 'bill', 'green']],
     cols: WO_COLS, selectable: w => !w.payNo, freeze: 1,
-    actions: w => `<button class="btn sm blue" data-act="view" data-id="${esc(w._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(w._id)}" ${isLockedPaid(w)?'disabled title="ชำระแล้ว แก้ไขไม่ได้"':''}>แก้ไข</button>`,
-    onAct: (a, w) => a === 'view' ? woView(w) : woForm(w)
+    actions: w => `<button class="btn sm blue" data-act="view" data-id="${esc(w._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(w._id)}" ${isLockedPaid(w)?'disabled title="ชำระแล้ว แก้ไขไม่ได้"':''}>แก้ไข</button><button class="btn sm red" data-act="del" data-id="${esc(w._id)}" ${w.payNo?'disabled title="ผูกกับรายการชำระแล้ว ลบไม่ได้"':''}>ลบ</button>`,
+    onAct: (a, w) => a === 'view' ? woView(w) : a === 'del' ? delRecord('workorders', w, 'ใบงาน ' + w.jobNo) : woForm(w)
   },
   fines: {
     title:'ค่าปรับ', col:'fines', rows: () => S.fines.slice().sort((a,b) => String(b.date).localeCompare(a.date)),
@@ -1309,8 +1359,8 @@ const PAGES = {
     ],
     buttons:[['ดาวน์โหลด Excel', ()=>listExcel('fines'), 'down'], ['เพิ่มรายการ', ()=>fineForm(), 'plus'], ['อัปโหลดรายการ', fineUpload, 'up'], ['สร้างรายการชำระ', ()=>attachToPayment('fines'), 'bill', 'green']],
     cols: FINE_COLS, selectable: f => !f.payNo, freeze: 1,
-    actions: f => `<button class="btn sm blue" data-act="view" data-id="${esc(f._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(f._id)}" ${isLockedPaid(f)?'disabled title="ชำระแล้ว แก้ไขไม่ได้"':''}>แก้ไข</button>`,
-    onAct: (a, f) => a === 'view' ? openModal({title:'ค่าปรับ ' + f.jobNo, body: dlHTML(FINE_COLS.map(([l,g,t]) => [l, fmtCell(g(f), t)])), buttons:[{label:'ปิด'}]}) : fineForm(f)
+    actions: f => `<button class="btn sm blue" data-act="view" data-id="${esc(f._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(f._id)}" ${isLockedPaid(f)?'disabled title="ชำระแล้ว แก้ไขไม่ได้"':''}>แก้ไข</button><button class="btn sm red" data-act="del" data-id="${esc(f._id)}" ${f.payNo?'disabled title="ผูกกับรายการชำระแล้ว ลบไม่ได้"':''}>ลบ</button>`,
+    onAct: (a, f) => a === 'del' ? delRecord('fines', f, 'ค่าปรับของใบงาน ' + f.jobNo) : a === 'view' ? openModal({title:'ค่าปรับ ' + f.jobNo, body: dlHTML(FINE_COLS.map(([l,g,t]) => [l, fmtCell(g(f), t)])), buttons:[{label:'ปิด'}]}) : fineForm(f)
   },
   advances: {
     title:'เบิกล่วงหน้า', col:'advances', rows: () => S.advances.slice().sort((a,b) => String(b.advNo).localeCompare(a.advNo)),
@@ -1321,8 +1371,8 @@ const PAGES = {
     ],
     buttons:[['ดาวน์โหลด Excel', ()=>listExcel('advances'), 'down'], ['เพิ่มรายการ', ()=>advForm(), 'plus'], ['อัปโหลดรายการ', advUpload, 'up'], ['สร้างรายการชำระ', ()=>attachToPayment('advances'), 'bill', 'green']],
     cols: ADV_COLS, selectable: a => !a.payNo, freeze: 1,
-    actions: a => `<button class="btn sm blue" data-act="view" data-id="${esc(a._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(a._id)}" ${a.payNo?'disabled title="ผูกกับรายการชำระแล้ว"':''}>แก้ไข</button>`,
-    onAct: (x, a) => x === 'view' ? openModal({title:'เบิกล่วงหน้า ' + a.advNo, body: dlHTML(ADV_COLS.map(([l,g,t]) => [l, fmtCell(g(a), t)])), buttons:[{label:'ปิด'}]}) : x === 'edit' ? advForm(a) : advApprove(a, x === 'ok')
+    actions: a => `<button class="btn sm blue" data-act="view" data-id="${esc(a._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(a._id)}" ${a.payNo?'disabled title="ผูกกับรายการชำระแล้ว"':''}>แก้ไข</button><button class="btn sm red" data-act="del" data-id="${esc(a._id)}" ${a.payNo?'disabled title="ผูกกับรายการชำระแล้ว ลบไม่ได้"':''}>ลบ</button>`,
+    onAct: (x, a) => x === 'view' ? openModal({title:'เบิกล่วงหน้า ' + a.advNo, body: dlHTML(ADV_COLS.map(([l,g,t]) => [l, fmtCell(g(a), t)])), buttons:[{label:'ปิด'}]}) : x === 'edit' ? advForm(a) : x === 'del' ? delRecord('advances', a, 'เบิกล่วงหน้า ' + a.advNo) : null
   },
   payments: {
     title:'รายการชำระ', col:'payments', rows: () => S.payments.slice().sort((a,b) => String(b.payNo).localeCompare(a.payNo)),
@@ -1332,8 +1382,8 @@ const PAGES = {
     ],
     buttons:[['ดาวน์โหลด', ()=>listExcel('payments'), 'down']],
     cols: PAY_COLS, selectable: null, freeze: 2,
-    actions: p => `<button class="btn sm blue" data-act="view" data-id="${esc(p._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(p._id)}" ${p.paid?'disabled':''}>แก้ไขค่าใช้จ่าย</button><button class="btn sm blue" data-act="xls" data-id="${esc(p._id)}">ดาวน์โหลด Excel</button><button class="btn sm green" data-act="pay" data-id="${esc(p._id)}" ${p.paid?'disabled':''}>ชำระ</button>`,
-    onAct: (a, p) => ({view:payView, edit:payEdit, xls:payExcel, pay:payPay, items:payItems})[a](p)
+    actions: p => `<button class="btn sm blue" data-act="view" data-id="${esc(p._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(p._id)}" ${p.paid?'disabled':''}>แก้ไขค่าใช้จ่าย</button><button class="btn sm blue" data-act="xls" data-id="${esc(p._id)}">ดาวน์โหลด Excel</button><button class="btn sm green" data-act="pay" data-id="${esc(p._id)}" ${p.paid?'disabled':''}>ชำระ</button>${p.paid ? `<button class="btn sm red" data-act="unpay" data-id="${esc(p._id)}">ยกเลิกชำระ</button>` : `<button class="btn sm red" data-act="cancel" data-id="${esc(p._id)}">ยกเลิกบิล</button>`}`,
+    onAct: (a, p) => ({view:payView, edit:payEdit, xls:payExcel, pay:payPay, items:payItems, cancel:payCancel, unpay:payUnpay})[a](p)
   },
   fleets: {
     title:'ข้อมูลฟลีท', group:'การจัดการฟลีท', col:'fleets', rows: () => S.fleets.slice().sort((a,b) => String(a.code).localeCompare(b.code)),
