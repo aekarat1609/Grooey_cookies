@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shopee – ระบบทำจ่ายฟลีท</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --frame:#000; --bg:#f2f2f2; --card:#fff; --line:#e3e3e3; --line2:#ececec;
+  --ink:#111; --ink2:#555; --ink3:#6b6b6b;
+  --pri:#c63b1d; --pri-h:#a92f15; --pri-soft:#fdeee9;
+  --ok:#17663a; --ok-bg:#e5f4ea; --warn:#8a5300; --warn-bg:#fff2d9;
+  --bad:#b3261e; --bad-bg:#fde8e6; --mute-bg:#eeeeee; --info:#1d4f91; --info-bg:#e6effa;
+  --top:52px; --side:210px; --r:8px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:"Noto Sans Thai",system-ui,sans-serif;font-size:14px;color:var(--ink);background:var(--frame)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--info)}
+.topbar{position:fixed;top:0;left:var(--side);right:0;height:var(--top);background:var(--frame);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:30;border-bottom:1px solid #1d1d1d}
+.topbar .brand{font-weight:700;font-size:16px;letter-spacing:.2px;display:none}
+.topbar .sp{flex:1}
+.conn{font-size:12px;color:#ccc;display:flex;align-items:center;gap:6px}
+.conn i{width:8px;height:8px;border-radius:50%;background:#888;display:inline-block}
+.conn.on i{background:#3ccf72}.conn.local i{background:#f0a020}
+.menu-btn{display:none;background:none;border:0;color:#fff;width:44px;height:44px;cursor:pointer;border-radius:8px}
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--side);background:var(--frame);color:#fff;overflow:auto;z-index:35;border-right:1px solid #1d1d1d;transition:width .18s}
+.sb-head{height:var(--top);display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid #222}
+.sb-head b{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden}
+.sb-tog{background:none;border:0;color:#fff;width:32px;height:32px;border-radius:6px;cursor:pointer;display:grid;place-items:center;flex:none}
+.sb-tog:hover{background:#1c1c1c}
+.sb-nav{padding:10px 8px}
+.nav-group{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:#e8e8e8;padding:10px 12px;font-weight:600;font-size:14.5px;cursor:pointer;text-align:left;border-radius:8px;position:relative}
+.nav-group:hover{background:#151515}
+.nav-group .ic{width:18px;height:18px;flex:none;color:#cfcfcf}
+.nav-group .lbl{flex:1;white-space:nowrap;overflow:hidden}
+.nav-group .chev{width:14px;height:14px;flex:none;color:#9a9a9a;transition:transform .15s}
+.nav-group[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.nav-group.cur{background:#1f1f1f;color:#fff;box-shadow:inset 3px 0 0 #2f80ed}
+.nav-group+.nav-sub{}
+.nav-group{margin-top:4px}
+.nav-sub{list-style:none;margin:6px 0 6px 21px;padding:0 0 0 10px;border-left:1px solid #333;display:grid;gap:2px}
+.nav-sub[hidden]{display:none}
+.nav-sub a{display:block;position:relative;color:#cfcfcf;text-decoration:none;padding:8px 12px;font-size:14px;border-radius:6px;white-space:nowrap}
+.nav-sub a:hover{background:#151515;color:#fff}
+.nav-sub a.active{background:#262626;color:#fff;font-weight:700}
+.nav-sub a.active::before{content:"";position:absolute;left:-11px;top:6px;bottom:6px;width:2px;border-radius:2px;background:#2f80ed}
+body.sb-mini{--side:60px}
+body.sb-mini .sb-head b,body.sb-mini .nav-group .lbl,body.sb-mini .nav-group .chev,body.sb-mini .nav-sub{display:none}
+body.sb-mini .nav-group{justify-content:center;padding:10px 0}
+body.sb-mini .sb-head{padding:0;justify-content:center}
+main{position:fixed;top:var(--top);left:var(--side);right:0;bottom:0;background:var(--bg);display:flex;flex-direction:column;padding:8px 8px 0;gap:8px;overflow:hidden}
+.head-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 24px;display:flex;align-items:center;gap:12px}
+.head-card h1{margin:0;font-size:21px;font-weight:700}
+.head-card .crumb{color:var(--ink3);font-size:13px}
+.banner{border-radius:var(--r);padding:8px 14px;font-size:13px;background:var(--warn-bg);color:var(--warn)}
+.banner:empty{display:none}
+#view{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+.filters{padding:14px 16px 12px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px;align-items:start}
+.fgrid .fld.range{grid-column:span 2;min-width:0}
+.fgrid .fld.range .dpw{max-width:310px}
+.dpf{width:100%;height:36px;border:1px solid #cfcfcf;border-radius:6px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 10px;cursor:pointer;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.dpf span{flex:1;overflow:hidden;text-overflow:ellipsis}
+.dpf:focus-visible,.dpf.open{outline:2px solid #9cc2f0;border-color:#1a6fd1}
+.dpf:disabled{background:#f5f5f5;color:#444;cursor:default}
+.dpf .ph{color:#757575}
+.dpf svg{flex:none;width:16px;height:16px;color:#555}
+.dpop{position:fixed;z-index:300;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:12px;width:300px}
+.dpop .dhint{font-size:12.5px;color:var(--ink2);margin:0 0 8px;text-align:center}
+.dph{display:flex;align-items:center;gap:2px;margin-bottom:6px}
+.dph b{flex:1;text-align:center;font-size:15px}
+.dph button{width:32px;height:32px;border:0;background:none;border-radius:6px;cursor:pointer;font-size:16px;color:#333}
+.dph button:hover{background:#f0f0f0}
+.dpg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0}
+.dpg .wd{font-size:12px;color:var(--ink2);text-align:center;padding:4px 0;font-weight:600}
+.dpg button{height:36px;border:0;background:none;cursor:pointer;border-radius:6px;font-variant-numeric:tabular-nums}
+.dpg button:hover{background:#eaf2fd}
+.dpg button.out{color:#9a9a9a}
+.dpg button.td{box-shadow:inset 0 0 0 1px #1a6fd1}
+.dpg button.in{background:#e3eefc;border-radius:0}
+.dpg button.sel{background:#1a6fd1;color:#fff}
+.dpft{display:flex;justify-content:space-between;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.fld{position:relative}
+.ms-box{display:flex;flex-wrap:nowrap;overflow:hidden;align-items:center;gap:4px;min-height:36px;border:1px solid #cfcfcf;border-radius:6px;background:#fff;padding:3px 52px 3px 6px;position:relative;cursor:text}
+.ms-box:focus-within{outline:2px solid #9cc2f0;border-color:#1a6fd1}
+.ms-box::after{content:"";position:absolute;right:10px;top:50%;width:14px;height:14px;margin-top:-7px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat center;pointer-events:none}
+.fld .ms-box input.ms-in{border:0;outline:none;height:28px;padding:0 4px;flex:1;min-width:30px;width:auto;background:transparent}
+.chip{display:inline-flex;align-items:center;gap:2px;background:#e6effa;color:#1d4f91;border-radius:4px;padding:1px 2px 1px 7px;font-size:12.5px;font-weight:500;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{flex:none}.chip.more{background:#eee;color:#333;padding:1px 7px}
+.chip-x{border:0;background:none;color:#1d4f91;cursor:pointer;width:20px;height:20px;border-radius:3px;font-size:14px;line-height:1;padding:0}
+.chip-x:hover{background:#cfe0f6}
+.clrw{position:relative}
+.fld .clrw input{padding-right:34px}
+.x-clear{position:absolute;right:7px;top:50%;margin-top:-11px;width:22px;height:22px;border:0;border-radius:50%;background:#e2e2e2;color:#333;cursor:pointer;font-size:14px;line-height:1;padding:0;display:none}
+.x-clear:hover{background:#cfcfcf}
+.clrw.has .x-clear{display:block}
+.clrw.dpw .x-clear{right:34px}
+.clrw.dpw.has .dpf span{padding-right:28px}
+.ms-clear{position:absolute;right:28px;top:50%;margin-top:-11px;width:22px;height:22px;border:0;border-radius:50%;background:#e2e2e2;color:#333;cursor:pointer;font-size:14px;line-height:1;padding:0}
+.ms-clear:hover{background:#cfcfcf}
+.combo-list li .ck{width:16px;height:16px;flex:none;border:1.5px solid #9a9a9a;border-radius:3px;display:inline-grid;place-items:center;font-size:11px;color:#fff;align-self:center}
+.combo-list li.on .ck{background:#1a6fd1;border-color:#1a6fd1}
+.combo-list li .nm{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.combo-list{position:absolute;left:0;right:0;top:100%;margin:4px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.16);max-height:280px;overflow:auto;z-index:40;min-width:240px}
+.combo-list li{padding:8px 10px;border-radius:6px;cursor:pointer;display:flex;gap:10px;align-items:baseline}
+.combo-list li b{font-weight:600;font-variant-numeric:tabular-nums;min-width:44px}
+.combo-list li span{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.combo-list li.act,.combo-list li:hover{background:#eaf2fd}
+.combo-list li.none{color:var(--ink3);cursor:default;background:none}
+.combo-list mark{background:#fff1a8;color:inherit;border-radius:2px}
+.fld label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:4px}
+.fld input,.fld select{width:100%;height:36px;border:1px solid #cfcfcf;border-radius:6px;padding:0 10px;background:#fff}
+.fld input:focus,.fld select:focus,.form input:focus,.form select:focus,.form textarea:focus{outline:2px solid #f3a48f;outline-offset:0;border-color:var(--pri)}
+.rng{display:flex;align-items:center;gap:4px;height:36px;border:1px solid #cfcfcf;border-radius:6px;background:#fff;padding:0 4px}
+.rng:focus-within{outline:2px solid #f3a48f;border-color:var(--pri)}
+.fld .rng input{border:0;height:34px;padding:0 6px;flex:1;min-width:0;outline:none!important}
+.rng span{color:var(--ink3);font-size:13px;white-space:nowrap;padding:0 2px}
+.fbtns{display:flex;gap:8px;justify-content:flex-start;align-items:center;flex-wrap:wrap;margin-top:12px}
+.fbtns .sp{width:1px;height:24px;background:var(--line);margin:0 4px}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.toolbar .sel{font-size:13px;color:var(--ink2)}
+.toolbar .sp{flex:1}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin:-6px -16px 14px;padding:0 8px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:8px 16px;cursor:pointer;font-weight:500;color:var(--ink2);min-height:40px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--pri);border-bottom-color:var(--pri);font-weight:600}
+.tab .cnt{display:inline-block;min-width:22px;padding:0 6px;margin-left:4px;border-radius:999px;background:#e6e6e6;color:#333;font-size:12px;text-align:center}
+.tab[aria-selected="true"] .cnt{background:var(--pri-soft);color:var(--pri)}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid #cfcfcf;background:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:500}
+.btn:hover{background:#f6f6f6}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.pri:hover{background:var(--pri-h)}
+.btn.blue{background:#1a6fd1;border-color:#1a6fd1;color:#fff}.btn.blue:hover{background:#155bb0;border-color:#155bb0}
+.btn.green{background:#16a34a;border-color:#16a34a;color:#fff;font-weight:600}.btn.green:hover{background:#12873d;border-color:#12873d}
+.btn.red{background:#c62828;border-color:#c62828;color:#fff}.btn.red:hover{background:#a51f1f;border-color:#a51f1f}
+td.act .btn+.btn{margin-left:6px}
+.btn.blue:disabled,.btn.green:disabled,.btn.red:disabled{background:#c9c9c9;border-color:#c9c9c9;color:#fff;opacity:1}
+.btn.dark{background:#111;border-color:#111;color:#fff}.btn.dark:hover{background:#333}
+.btn.sm{height:30px;padding:0 10px;font-size:13px}
+.btn.link{border-color:transparent;background:none;color:var(--info);padding:0 6px;height:28px}
+.btn.link:hover{background:var(--info-bg)}
+.btn svg{width:16px;height:16px}
+.tcard{flex:1;min-height:220px;overflow:auto;position:relative}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line2);white-space:nowrap;text-align:left;vertical-align:middle}
+thead th{position:sticky;top:0;background:#f7f7f7;font-weight:600;color:#333;z-index:2;border-bottom:1px solid var(--line)}
+tbody tr:hover td{background:#fbfbfb}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+th.fz,td.fz{position:sticky;background:#fff;z-index:1}
+thead th.fz{background:#f7f7f7;z-index:3}
+tbody tr:hover td.fz{background:#fbfbfb}
+th.fzl,td.fzl{box-shadow:6px 0 8px -6px rgba(0,0,0,.15)}
+th.act,td.act{position:sticky;right:0;background:#fff;box-shadow:-6px 0 8px -6px rgba(0,0,0,.15);z-index:1}
+thead th.act{background:#f7f7f7;z-index:3}
+tbody tr:hover td.act{background:#fbfbfb}
+td.chk,th.chk{width:40px;padding-right:0}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--pri);cursor:pointer}
+.empty{padding:48px 16px;text-align:center;color:var(--ink3)}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--mute-bg);color:#444}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-warn{background:var(--warn-bg);color:var(--warn)}
+.b-bad{background:var(--bad-bg);color:var(--bad)}.b-info{background:var(--info-bg);color:var(--info)}
+.mono{font-variant-numeric:tabular-nums}
+.pager{display:flex;align-items:center;gap:12px;padding:10px 20px 12px;background:var(--bg);flex-wrap:wrap}
+.pager select{height:32px;border:1px solid #bdbdbd;border-radius:4px;padding:0 8px;background:#fff}
+.pager .sp{flex:1}
+.pager .sel{color:var(--ink2)}
+.pager .psep{width:1px;height:20px;background:#cfcfcf}
+.pager .pg{display:flex;gap:4px;align-items:center}
+.pager .pg button{min-width:32px;height:32px;border:1px solid #cfcfcf;background:#fff;border-radius:4px;cursor:pointer}
+.pager .pg button[aria-current="page"]{background:#111;color:#fff;border-color:#111}
+.pager .pg button:disabled{opacity:.4;cursor:default}
+/* modal */
+.mback{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:100;overflow:auto}
+.modal{background:#fff;border-radius:10px;width:min(760px,100%);box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:calc(100vh - 80px)}
+.modal.pay{width:min(600px,100%)}
+.rowform{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px 20px;align-items:start}
+.rowform .rl{color:#333;font-size:14px;min-height:38px;display:flex;align-items:center}
+.rowform .rt{min-height:38px;display:flex;align-items:center}
+.radios{padding-top:7px}
+.rowform .rl label{display:inline}
+.rowform .rt{font-size:15px;font-variant-numeric:tabular-nums}
+.rowform input[type=number],.rowform select,.rowform textarea{width:100%;height:38px;border:1px solid #cfcfcf;border-radius:6px;padding:0 12px;background:#fff}
+.rowform textarea{height:76px;padding:8px 12px;resize:vertical}
+.rowform input:focus,.rowform select:focus,.rowform textarea:focus{outline:2px solid #9cc2f0;border-color:#1a6fd1}
+.radios{display:grid;gap:10px;margin-bottom:10px}
+.rdo{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-variant-numeric:tabular-nums}
+.rdo input{width:20px;height:20px;accent-color:#1a6fd1;margin:0}
+.rdo input:checked+span{color:#1a6fd1;font-weight:600}
+.attach-btn{width:38px;height:38px;padding:0;justify-content:center;font-size:20px}
+@media (max-width:520px){.rowform{grid-template-columns:1fr;gap:6px}.rowform .rv{margin-bottom:8px}}
+.modal.wide{width:min(1100px,100%)}.modal.narrow{width:min(480px,100%)}
+.mhead{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line)}
+.mhead h2{margin:0;font-size:17px;flex:1}
+.mclose{width:36px;height:36px;border:0;background:none;border-radius:6px;cursor:pointer;font-size:22px;line-height:1;color:#444}
+.mclose:hover{background:#f0f0f0}
+.mbody{padding:18px 20px;overflow:auto}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--line)}
+.form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 16px}
+.form .full{grid-column:1/-1}
+.form label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:4px}
+.form input,.form select,.form textarea{width:100%;height:36px;border:1px solid #cfcfcf;border-radius:6px;padding:0 10px;background:#fff}
+.form textarea{height:70px;padding:8px 10px;resize:vertical}
+.form input[readonly],.form select:disabled{background:#f5f5f5;color:#444}
+.form output.calc{display:flex;align-items:center;height:36px;padding:0 10px;border-radius:6px;background:#f5f5f5;font-weight:600;font-variant-numeric:tabular-nums}
+.req{color:var(--bad);margin-right:3px}
+.ferr{color:var(--bad);font-size:13px;margin-top:10px}
+.hint{color:var(--ink3);font-size:12.5px}
+.sec-title{font-weight:700;font-size:14px;margin:18px 0 8px}
+.sec-title:first-child{margin-top:0}
+.dl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 16px}
+.dl{gap:12px 16px}.dl div{min-width:0}.dl dt{font-size:12.5px;color:var(--ink2);margin-bottom:4px}
+.dl dd{margin:0;min-height:36px;display:flex;align-items:center;padding:6px 10px;border:1px solid #dcdcdc;border-radius:6px;background:#f2f2f2;color:#333;word-break:break-word}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--ink2)}
+.stat.ok b{color:var(--ok)}.stat.info b{color:var(--info)}.stat.bad b{color:var(--bad)}
+.steps{display:grid;gap:12px}
+.step{border:1px dashed #cfcfcf;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.step .n{width:26px;height:26px;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+.step .t{flex:1;min-width:200px}
+.mini{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:320px}
+.mini table{font-size:12.5px}
+.sumbox{background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:6px}
+.sumbox .r{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.sumbox .r.tot{font-weight:700;border-top:1px solid var(--line);padding-top:6px}
+.toasts{position:fixed;right:16px;bottom:16px;display:grid;gap:8px;z-index:200}
+.toast{background:#111;color:#fff;border-radius:8px;padding:10px 14px;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:380px;display:flex;gap:10px;align-items:center}
+.toast.err{background:var(--bad)}
+.toast button{white-space:nowrap;background:#fff;color:#111;border:0;border-radius:4px;padding:3px 8px;cursor:pointer;font-weight:600}
+.lock{color:var(--ink3);font-size:12px}
+@media (max-width: 860px){
+  :root{--side:0px}
+  .menu-btn{display:inline-grid;place-items:center}
+  .sidebar{width:240px;transform:translateX(-100%);transition:transform .2s}
+  .topbar{left:0}
+  .topbar .brand{display:block}
+  body.sb-mini{--side:0px}
+  body.sb-mini .sb-head b,body.sb-mini .nav-group .lbl,body.sb-mini .nav-group .chev{display:revert}
+  body.nav-open .sidebar{transform:none}
+  .form,.dl{grid-template-columns:1fr 1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .fgrid .fld.range{grid-column:1/-1}
+  main{overflow:auto}
+  #view{flex:none}
+  .tcard{flex:none;max-height:70vh}
+}
+@media (max-width: 520px){.form,.dl{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="เปิดเมนู"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  <div class="brand">ระบบทำจ่ายฟลีท</div>
+  <div class="sp"></div>
+  <div class="conn" id="conn"><i></i><span>กำลังเชื่อมต่อ…</span></div>
+</header>
+<nav class="sidebar" aria-label="เมนูหลัก">
+  <div class="sb-head"><button class="sb-tog" id="sbTog" aria-label="ย่อ/ขยายเมนู"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button><b>ระบบทำจ่ายฟลีท</b></div>
+  <div class="sb-nav">
+    <button class="nav-group" data-grp="grpShopee" aria-expanded="true" aria-controls="grpShopee" title="Shopee">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      <span class="lbl">Shopee</span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+    <ul class="nav-sub" id="grpShopee">
+      <li><a href="#workorders" data-r="workorders">รายการใบงาน</a></li>
+      <li><a href="#fines" data-r="fines">ค่าปรับ</a></li>
+      <li><a href="#advances" data-r="advances">เบิกล่วงหน้า</a></li>
+      <li><a href="#payments" data-r="payments">รายการชำระ</a></li>
+    </ul>
+    <button class="nav-group" data-grp="grpFleet" aria-expanded="true" aria-controls="grpFleet" title="การจัดการฟลีท">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>
+      <span class="lbl">การจัดการฟลีท</span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+    <ul class="nav-sub" id="grpFleet">
+      <li><a href="#fleets" data-r="fleets">ข้อมูลฟลีท</a></li>
+    </ul>
+    <button class="nav-group" data-grp="grpSet" aria-expanded="true" aria-controls="grpSet" title="การตั้งค่า">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.5"/><path d="M4.5 5.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6M4.5 11.5v6c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-6"/></svg>
+      <span class="lbl">การตั้งค่า</span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+    <ul class="nav-sub" id="grpSet">
+      <li><a href="#masters" data-r="masters">ข้อมูลหลัก</a></li>
+    </ul>
+  </div>
+</nav>
+<main>
+  <div class="head-card"><h1 id="pageTitle">รายการใบงาน</h1><span class="crumb" id="crumb">Shopee</span></div>
+  <div class="banner" id="banner" role="status"></div>
+  <section id="view"></section>
+  <footer class="pager" id="pager"></footer>
+</main>
+<div id="lists"></div>
+<div id="modalRoot"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ===================== utilities ===================== */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { if (typeof v === 'number') return isFinite(v) ? v : 0; const n = parseFloat(String(v ?? '').replace(/[, %฿]/g,'')); return isFinite(n) ? n : 0; };
+const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+const money = n => (Number(n)||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const fdate = s => { if(!s) return '-'; const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s); return m ? `${m[3]}/${m[2]}/${m[1]}` : esc(s); };
+const addDays = (s, n) => { const [y,m,d] = s.split('-').map(Number); const dt = new Date(y, m-1, d + (Number(n)||0)); return ymd(dt); };
+const clone = o => JSON.parse(JSON.stringify(o ?? null));
+const lc = v => String(v ?? '').toLowerCase();
+const okId = s => /^[A-Za-z0-9_\-.~:@+]{1,180}$/.test(s) && s !== '.' && s !== '..';
+const toId = s => String(s).trim().replace(/[^A-Za-z0-9_\-.~:@+]/g,'_').slice(0,180) || ('x'+Date.now());
+const rid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+function parseDate(v){
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'number' && v > 20000 && v < 80000){ const d = new Date(Date.UTC(1899,11,30) + Math.round(v)*86400000); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`; }
+  if (v instanceof Date && !isNaN(v)) return ymd(v);
+  const s = String(v).trim(); let y, m, d, r;
+  if ((r = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s))) { y=+r[1]; m=+r[2]; d=+r[3]; }
+  else if ((r = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/.exec(s))) { d=+r[1]; m=+r[2]; y=+r[3]; }
+  else return null;
+  if (y > 2400) y -= 543;
+  const dt = new Date(y, m-1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== m-1 || dt.getDate() !== d) return null;
+  return ymd(dt);
+}
+function parseNum(v, def){ if (v === '' || v === null || v === undefined) return def; if (typeof v === 'number') return v; const s = String(v).replace(/[, %฿]/g,''); if (s === '') return def; const n = Number(s); return isFinite(n) ? n : NaN; }
+const str = v => (v === null || v === undefined) ? '' : String(v).trim();
+
+const ICON = {
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>',
+  bill:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>'
+};
+
+/* ===================== data layer ===================== */
+const COLS = ['fleets','workorders','fines','advances','payments','masters'];
+const S = {fleets:[], workorders:[], fines:[], advances:[], payments:[], masters:[]};
+let DB = null, MODE = 'loading', CAN_WRITE = true, ASSETS = null;
+const LS_KEY = 'shopee-fleetpay-v1';
+function lsLoad(){ try { const t = localStorage.getItem(LS_KEY); if (t) { const o = JSON.parse(t); COLS.forEach(c => { if (Array.isArray(o[c])) S[c] = o[c]; }); } } catch(e){} }
+function lsSave(){ try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){} }
+
+function upsertLocal(col, id, rec){ const a = S[col]; const i = a.findIndex(x => x._id === id); const r = {...rec, _id:id}; if (i >= 0) a[i] = r; else a.push(r); }
+function writeErr(e){
+  const c = e && e.code;
+  if (c === 'invalid_argument') { CAN_WRITE = false; return 'คุณไม่มีสิทธิ์บันทึกข้อมูลในระบบนี้'; }
+  if (c === 'quota_exceeded') return 'พื้นที่เก็บข้อมูลเต็ม';
+  if (c === 'resource_exhausted') return 'บันทึกถี่เกินไป ลองอีกครั้งในสักครู่';
+  return 'บันทึกไม่สำเร็จ (' + (c || 'error') + ')';
+}
+async function del(col, id){
+  S[col] = S[col].filter(x => x._id !== id); scheduleRender();
+  if (DB) await DB.collection(col).doc(id).delete(); else lsSave();
+}
+async function put(col, id, data){
+  const rec = {...data}; delete rec._id; rec.updatedAt = new Date().toISOString();
+  upsertLocal(col, id, rec); scheduleRender();
+  if (DB) {
+    const ref = DB.collection(col).doc(id);
+    try { await ref.set(rec); }
+    catch(e){ if (e && e.code === 'unavailable') { await new Promise(r => setTimeout(r, 400 + Math.random()*600)); await ref.set(rec); } else throw e; }
+  } else lsSave();
+}
+async function runAll(tasks, conc=4){
+  const res = new Array(tasks.length); let i = 0;
+  async function worker(){ while (i < tasks.length) { const k = i++; try { res[k] = {ok:true, v: await tasks[k]()}; } catch(e){ res[k] = {ok:false, e}; } } }
+  await Promise.all(Array.from({length: Math.min(conc, tasks.length)}, worker));
+  return res;
+}
+
+/* ===================== domain ===================== */
+const fleetBy = code => S.fleets.find(f => lc(f.code) === lc(code));
+const woTotal = w => round2(num(w.freight) + num(w.other));
+const woPayable = w => round2(woTotal(w) * (1 - num(w.deductPct)/100));
+const payBy = no => no ? S.payments.find(p => p.payNo === no) : null;
+function payStatus(p){ if (!p) return ''; if (p.paid) return 'ชำระแล้ว'; if (p.dueDate && p.dueDate < today()) return 'เกินกำหนด'; return 'รอชำระ'; }
+const createStatus = r => r.payNo ? 'สร้างแล้ว' : 'ยังไม่สร้าง';
+const itemPayStatus = r => r.payNo ? payStatus(payBy(r.payNo)) : 'ยังไม่ชำระ';
+const isLockedPaid = r => itemPayStatus(r) === 'ชำระแล้ว';
+const DED_KEYS = [['installment','ค่างวดรถ'],['fuel','ค่าน้ำมัน'],['fine','ค่าปรับ'],['repair','ค่าซ่อมรถ'],['insurance','ค่าประกัน'],['advance','ค่าเบิกล่วงหน้า'],['gps','ค่าGPS'],['traffic','ค่าปรับจราจร'],['other','อื่นๆ']];
+function calcPay(p, override){
+  const q = override || p;
+  const jobs = (p.jobIds||[]).map(id => S.workorders.find(w => w._id === id)).filter(Boolean);
+  const fines = (q.fineIds||[]).map(id => S.fines.find(f => f._id === id)).filter(Boolean);
+  const advs = (q.advIds||[]).map(id => S.advances.find(a => a._id === id)).filter(Boolean);
+  const base = round2(jobs.reduce((s,w) => s + woPayable(w), 0));
+  const fastPct = num(q.fastPct);
+  const fastAmt = round2(base * fastPct / 100);
+  const ded = {...(q.ded||{})};
+  ded.fine = round2(fines.reduce((s,f) => s + num(f.amount), 0));
+  ded.advance = round2(advs.reduce((s,a) => s + num(a.amount), 0));
+  const dedItems = DED_KEYS.reduce((s,[k]) => s + num(ded[k]), 0);
+  const dedTotal = round2(fastAmt + dedItems);
+  const diff = round2(base - dedTotal);
+  const owe = diff < 0;
+  const net = Math.abs(diff);
+  const wht = round2(base * 0.01);
+  const final = Math.abs(round2(net - wht));
+  return {jobs, fines, advs, count: (p.jobIds||[]).length, base, fastPct, fastAmt, ded, dedTotal, net, wht, final, owe};
+}
+function nextNo(prefix, list, field){
+  const pre = `${prefix}-${today().replace(/-/g,'')}-`; let max = 0;
+  list.forEach(r => { const v = String(r[field]||''); if (v.startsWith(pre)) { const n = parseInt(v.slice(pre.length),10); if (n > max) max = n; } });
+  return pre + String(max+1).padStart(3,'0');
+}
+function badge(t){
+  if (!t) return '<span class="hint">-</span>';
+  const map = {'ใช้งาน':'b-ok','สร้างแล้ว':'b-ok','ชำระแล้ว':'b-ok','อนุมัติ':'b-ok','หักคืนแล้ว':'b-ok','รอชำระ':'b-warn','รออนุมัติ':'b-warn','รอหักคืนในบิล':'b-info','ยังไม่หักคืน':'b-warn','เกินกำหนด':'b-bad','ไม่อนุมัติ':'b-bad'};
+  return `<span class="badge ${map[t]||''}">${esc(t)}</span>`;
+}
+function advReturnStatus(a){ if (a.payNo) return payStatus(payBy(a.payNo)) === 'ชำระแล้ว' ? 'หักคืนแล้ว' : 'รอหักคืนในบิล'; return 'ยังไม่หักคืน'; }
+
+/* ===================== UI state ===================== */
+let ROUTE = 'workorders';
+const D = {}, F = {}, P = {}, SEL = {};
+const monthRange = () => { const d = new Date(); return [ymd(new Date(d.getFullYear(), d.getMonth(), 1)), ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0))]; };
+const DEF_F = { workorders: () => { const [a, b] = monthRange(); return {doneDateFrom: a, doneDateTo: b}; } };
+const defF = k => DEF_F[k] ? DEF_F[k]() : {};
+['workorders','fines','advances','payments','fleets','masters'].forEach(k => { D[k] = defF(k); F[k] = defF(k); P[k] = {page:1, size:20}; SEL[k] = new Set(); });
+
+/* ===================== toasts / modal ===================== */
+function toast(msg, type, action){
+  const el = document.createElement('div'); el.className = 'toast' + (type === 'err' ? ' err' : '');
+  el.innerHTML = `<span>${esc(msg)}</span>`;
+  if (action) { const b = document.createElement('button'); b.textContent = action.label; b.onclick = () => { action.fn(); el.remove(); }; el.appendChild(b); }
+  $('#toasts').appendChild(el); setTimeout(() => el.remove(), action ? 7000 : 4000);
+}
+function openModal({title, body, size, buttons=[], onMount}){
+  const back = document.createElement('div'); back.className = 'mback';
+  back.innerHTML = `<div class="modal ${size||''}" role="dialog" aria-modal="true" aria-labelledby="mt"><div class="mhead"><h2 id="mt">${esc(title)}</h2><button class="mclose" aria-label="ปิด">&times;</button></div><div class="mbody">${body}</div>${buttons.length ? '<div class="mfoot"></div>' : ''}</div>`;
+  const m = back.firstElementChild;
+  const close = () => { back.remove(); };
+  m.close = close;
+  $('.mclose', m).onclick = close;
+  back.addEventListener('mousedown', e => { if (e.target === back) close(); });
+  m.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  const foot = $('.mfoot', m);
+  buttons.forEach(b => {
+    const btn = document.createElement('button'); btn.className = 'btn ' + (b.cls||''); btn.textContent = b.label;
+    btn.onclick = async () => {
+      if (!b.onClick) return close();
+      btn.disabled = true;
+      try { const r = await b.onClick(m); if (r !== false) close(); }
+      catch(e){ showErr(m, (e && e.code) ? writeErr(e) : (e && e.message) || String(e)); }
+      finally { btn.disabled = false; }
+    };
+    foot.appendChild(btn);
+  });
+  $('#modalRoot').appendChild(back);
+  if (onMount) onMount(m);
+  const first = $('input:not([readonly]):not([type=hidden]),select:not(:disabled),textarea', m) || $('.mclose', m); first && first.focus();
+  return m;
+}
+function showErr(m, msg){ let e = $('.ferr', m); if (!e) { e = document.createElement('div'); e.className = 'ferr'; e.setAttribute('role','alert'); $('.mbody', m).appendChild(e); } e.textContent = msg; }
+function confirmBox(title, html, okLabel='ยืนยัน'){
+  return new Promise(res => { let done = false; const m = openModal({title, size:'narrow', body: html, buttons:[{label:'ยกเลิก', onClick:()=>{done=true;res(false);}}, {label:okLabel, cls:'pri', onClick:()=>{done=true;res(true);}}]}); const c = m.close; m.close = () => { c(); if(!done) res(false); }; $('.mclose', m).onclick = m.close; });
+}
+function guardWrite(){ if (!CAN_WRITE) { toast('คุณไม่มีสิทธิ์บันทึกข้อมูลในระบบนี้', 'err'); return false; } return true; }
+
+/* ===================== forms ===================== */
+function fieldHTML(f, v, ro){
+  const id = 'f_' + f.k, rq = f.req ? '<span class="req">*</span>' : '';
+  const dis = (ro || f.ro) ? 'readonly' : '';
+  let input;
+  if (f.type === 'calc') input = `<output class="calc" id="${id}" data-calc="${f.k}">-</output>`;
+  else if (f.type === 'select') input = `<select id="${id}" data-k="${f.k}" ${(ro||f.ro)?'disabled':''}>${(f.options||[]).map(o => `<option value="${esc(o)}" ${String(v)===String(o)?'selected':''}>${esc(o||'— เลือก —')}</option>`).join('')}</select>`;
+  else if (f.type === 'textarea') input = `<textarea id="${id}" data-k="${f.k}" ${dis}>${esc(v)}</textarea>`;
+  else if (f.type === 'date') input = dpHTML({id, attr:`data-k="${f.k}"`, v1:v, ro: ro || f.ro, label:f.label});
+  else if (f.type === 'file') input = `<input id="${id}" type="file" data-file="${f.k}" accept="${f.accept||''}">`;
+  else input = `<input id="${id}" type="${f.type==='number'?'number':(f.type||'text')}" ${f.type==='number'?'step="0.01" min="0" inputmode="decimal"':''} data-k="${f.k}" value="${esc(v)}" ${f.list?`list="${f.list}"`:''} ${dis} autocomplete="off">`;
+  return `<div class="${f.full?'full':''}"><label for="${f.type==='date'?id+'_b':id}">${rq}${esc(f.label)}</label>${input}${f.hint?`<div class="hint">${esc(f.hint)}</div>`:''}</div>`;
+}
+const formHTML = (fields, rec={}, ro=false) => `<div class="form">${fields.map(f => fieldHTML(f, rec[f.k] ?? '', ro)).join('')}</div>`;
+function readForm(m){ const o = {}; $$('[data-k]', m).forEach(el => o[el.dataset.k] = el.value.trim()); return o; }
+function checkReq(fields, v){ const miss = fields.filter(f => f.req && !str(v[f.k])).map(f => f.label); return miss.length ? 'กรุณากรอก: ' + miss.join(', ') : ''; }
+function dlHTML(pairs){ return `<dl class="dl">${pairs.map(([k,v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>`; }
+function wireFleet(m){ const c = $('[data-k=fleetCode]', m), n = $('[data-k=fleetName]', m); if (!c || !n) return; c.addEventListener('input', () => { const f = fleetBy(c.value.trim()); if (f) n.value = f.name; }); }
+function wireJobLookup(m){ const j = $('[data-k=jobNo]', m); if (!j) return; j.addEventListener('change', () => { const w = S.workorders.find(x => lc(x.jobNo) === lc(j.value.trim())); if (!w) return; [['plate','plate'],['empId','empId'],['fleetCode','fleetCode'],['fleetName','fleetName']].forEach(([a,b]) => { const el = $(`[data-k=${a}]`, m); if (el && !el.value && !el.readOnly) el.value = w[b] || ''; }); }); }
+
+/* ===================== fleet multi-select combobox (fuzzy) ===================== */
+function fleetOpts(){
+  const m = new Map();
+  S.fleets.forEach(f => m.set(lc(f.code), {code: f.code, name: f.name || ''}));
+  [...S.workorders, ...S.fines, ...S.advances, ...S.payments].forEach(r => { if (r.fleetCode && !m.has(lc(r.fleetCode))) m.set(lc(r.fleetCode), {code: r.fleetCode, name: r.fleetName || ''}); });
+  return [...m.values()].sort((a,b) => String(a.code).localeCompare(b.code));
+}
+function fuzzyScore(q, s){
+  q = lc(q).replace(/\s+/g,''); s = lc(s); const sc = s.replace(/\s+/g,'');
+  if (!q) return 1;
+  if (s.startsWith(q)) return 4;
+  if (sc.includes(q)) return 3;
+  let i = 0; for (const ch of sc) { if (ch === q[i]) i++; if (i === q.length) return 2; }
+  return 0;
+}
+const msChips = arr => arr.slice(0, 1).map(msChip).join('') + (arr.length > 1 ? `<span class="chip more" title="${esc(arr.slice(1).join(', '))}">+${arr.length - 1}</span>` : '');
+const msChip = v => `<span class="chip">${esc(v)}<button type="button" class="chip-x" data-chipx="${esc(v)}" aria-label="เอา ${esc(v)} ออก">×</button></span>`;
+const msOf = el => el.closest('.ms');
+const msVals = ms => { const v = D[ROUTE][ms.dataset.key]; return Array.isArray(v) ? v : []; };
+function msSet(ms, arr){
+  D[ROUTE][ms.dataset.key] = arr;
+  const box = $('.ms-box', ms), inp = $('.ms-in', ms);
+  $$('.chip', box).forEach(c => c.remove());
+  inp.insertAdjacentHTML('beforebegin', msChips(arr));
+  inp.placeholder = arr.length ? '' : inp.dataset.ph;
+  $('.ms-clear', ms).hidden = !arr.length;
+}
+let CB = null;
+function openCombo(inp, keepAct){
+  const ms = msOf(inp), ul = $('.combo-list', ms), kind = inp.dataset.combo, q = inp.value.trim();
+  const chosen = new Set(msVals(ms).map(lc));
+  const items = fleetOpts().map(o => ({o, v: kind === 'code' ? o.code : o.name, s: Math.max(fuzzyScore(q, o.code), fuzzyScore(q, o.name))})).filter(x => x.s > 0 && x.v).sort((a,b) => b.s - a.s).slice(0, 80);
+  const act = keepAct && CB && CB.inp === inp ? Math.min(CB.act, items.length - 1) : (items.length ? 0 : -1);
+  CB = {inp, ul, items, act, ms};
+  const hl = t => { const ql = lc(q); const i = ql ? lc(t).indexOf(ql) : -1; return i < 0 ? esc(t) : esc(t.slice(0,i)) + '<mark>' + esc(t.slice(i, i+ql.length)) + '</mark>' + esc(t.slice(i+ql.length)); };
+  ul.innerHTML = items.length ? items.map((x,i) => { const on = chosen.has(lc(x.v)); return `<li role="option" id="${ul.id}_${i}" data-i="${i}" class="${i===act?'act':''}${on?' on':''}" aria-selected="${on}"><span class="ck" aria-hidden="true">${on ? '✓' : ''}</span><b>${hl(x.o.code)}</b><span class="nm">${hl(x.o.name)}</span></li>`; }).join('')
+    : `<li class="none">${q ? 'ไม่พบฟลีท — กด Enter เพื่อค้นหาคำว่า "' + esc(q) + '"' : 'ไม่มีข้อมูลฟลีท'}</li>`;
+  ul.hidden = false; inp.setAttribute('aria-expanded','true');
+  if (act >= 0) inp.setAttribute('aria-activedescendant', ul.id + '_' + act); else inp.removeAttribute('aria-activedescendant');
+}
+function closeCombo(){ if (!CB) return; CB.ul.hidden = true; CB.inp.setAttribute('aria-expanded','false'); CB.inp.removeAttribute('aria-activedescendant'); CB.inp.value = ''; CB = null; }
+function toggleVal(ms, v){ const cur = msVals(ms); const has = cur.some(x => lc(x) === lc(v)); msSet(ms, has ? cur.filter(x => lc(x) !== lc(v)) : [...cur, v]); }
+function pickCombo(i){
+  if (!CB || !CB.items[i]) return; const {inp, ms} = CB;
+  toggleVal(ms, CB.items[i].v); CB.act = i; openCombo(inp, true);
+}
+function moveCombo(d){ if (!CB || !CB.items.length) return; const lis = $$('li[data-i]', CB.ul); lis[CB.act] && lis[CB.act].classList.remove('act'); CB.act = (CB.act + d + lis.length) % lis.length; const li = lis[CB.act]; li.classList.add('act'); li.scrollIntoView({block:'nearest'}); CB.inp.setAttribute('aria-activedescendant', li.id); }
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('#filters .ms-in')) openCombo(e.target); });
+document.addEventListener('input', e => { if (e.target.matches && e.target.matches('#filters .ms-in')) openCombo(e.target); });
+document.addEventListener('focusout', e => { if (CB && e.target === CB.inp) setTimeout(() => { if (CB && document.activeElement !== CB.inp) closeCombo(); }, 120); });
+document.addEventListener('mousedown', e => {
+  if (!e.target.closest) return;
+  const li = e.target.closest('.combo-list li[data-i]'); if (li) { e.preventDefault(); return pickCombo(+li.dataset.i); }
+  const x = e.target.closest('[data-chipx]'); if (x) { e.preventDefault(); const ms = msOf(x); toggleVal(ms, x.dataset.chipx); const inp = $('.ms-in', ms); if (CB && CB.inp === inp) openCombo(inp, true); return; }
+  const c = e.target.closest('[data-msclear]'); if (c) { e.preventDefault(); const ms = msOf(c); msSet(ms, []); const inp = $('.ms-in', ms); inp.value = ''; if (CB && CB.inp === inp) openCombo(inp); return; }
+  const box = e.target.closest('.ms-box'); if (box && !e.target.closest('input')) { e.preventDefault(); $('.ms-in', box).focus(); }
+});
+document.addEventListener('keydown', e => {
+  if (!e.target.matches || !e.target.matches('#filters .ms-in')) return;
+  const inp = e.target;
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (!CB) openCombo(inp); else moveCombo(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveCombo(-1); }
+  else if (e.key === 'Enter') {
+    const q = inp.value.trim();
+    if (CB && CB.act >= 0 && q) { e.preventDefault(); pickCombo(CB.act); inp.value = ''; openCombo(inp); }
+    else if (q) { e.preventDefault(); toggleVal(msOf(inp), q); inp.value = ''; openCombo(inp); }
+  }
+  else if (e.key === 'Backspace' && !inp.value) { const ms = msOf(inp), cur = msVals(ms); if (cur.length) { msSet(ms, cur.slice(0, -1)); openCombo(inp, true); } }
+  else if (e.key === 'Escape' && CB) { e.preventDefault(); e.stopPropagation(); closeCombo(); }
+});
+
+document.addEventListener('input', e => { const w = e.target.closest && e.target.closest('#filters .clrw'); if (!w) return; w.classList.toggle('has', $$('input', w).some(i => i.value)); });
+document.addEventListener('mousedown', e => {
+  const x = e.target.closest && e.target.closest('[data-xclear]'); if (!x) return; e.preventDefault();
+  const w = x.closest('.clrw');
+  $$('input', w).forEach(i => { i.value = ''; if (i.dataset.f) D[ROUTE][i.dataset.f] = ''; });
+  const b = $('.dpf', w); if (b) $('span', b).innerHTML = dpText('', '', !!b.dataset.dp2);
+  w.classList.remove('has');
+  const t = $('input[type=text]', w) || b; t && t.focus();
+});
+
+/* ===================== Thai date picker ===================== */
+const TH_M = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH_D = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+const CAL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+function dpText(a, b, range){
+  if (range) return (a || b) ? `${a ? fdate(a) : 'วว/ดด/ปปปป'} – ${b ? fdate(b) : 'วว/ดด/ปปปป'}` : '<span class="ph">วว/ดด/ปปปป – วว/ดด/ปปปป</span>';
+  return a ? fdate(a) : '<span class="ph">วว/ดด/ปปปป</span>';
+}
+function dpHTML({id, id2, attr, attr2, v1, v2, ro, label}){
+  const range = !!id2;
+  return `<input type="hidden" id="${id}" ${attr} value="${esc(v1||'')}">${range ? `<input type="hidden" id="${id2}" ${attr2} value="${esc(v2||'')}">` : ''}<button type="button" class="dpf" id="${id}_b" data-dp="${id}" ${range ? `data-dp2="${id2}"` : ''} ${ro ? 'disabled' : ''} aria-haspopup="dialog" aria-label="${esc(label)}${range ? ' (ช่วงวันที่)' : ''}"><span>${dpText(v1, v2, range)}</span>${CAL_ICON}</button>`;
+}
+let DP = null;
+function closeDP(){ if (!DP) return; DP.pop.remove(); DP.b.classList.remove('open'); const b = DP.b; DP = null; if (b.isConnected) b.focus(); }
+function fireDP(el){ el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true})); }
+function openDP(b){
+  if (DP) { const same = DP.b === b; closeDP(); if (same) return; }
+  const i1 = document.getElementById(b.dataset.dp), i2 = b.dataset.dp2 ? document.getElementById(b.dataset.dp2) : null;
+  const base = i1.value || (i2 && i2.value) || today();
+  const [y, m] = base.split('-').map(Number);
+  const pop = document.createElement('div'); pop.className = 'dpop'; pop.setAttribute('role','dialog'); pop.setAttribute('aria-label','เลือกวันที่');
+  DP = {b, i1, i2, range: !!i2, y, m: m-1, pick: 'start', pop};
+  document.body.appendChild(pop); b.classList.add('open'); drawDP();
+  const r = b.getBoundingClientRect(), ph = pop.offsetHeight;
+  pop.style.left = Math.max(8, Math.min(r.left, innerWidth - 308)) + 'px';
+  pop.style.top = (r.bottom + 4 + ph > innerHeight && r.top - ph - 4 > 0 ? r.top - ph - 4 : r.bottom + 4) + 'px';
+  const f = $('.sel', pop) || $('.td', pop) || $('.dpg button', pop); f && f.focus();
+}
+function setDP(a, b){
+  const {i1, i2} = DP; i1.value = a || ''; fireDP(i1); if (i2) { i2.value = b || ''; fireDP(i2); }
+  if (DP.b.isConnected) $('span', DP.b).innerHTML = dpText(i1.value, i2 ? i2.value : '', !!i2);
+}
+function drawDP(){
+  const {y, m, range, i1, i2, pop} = DP, s = i1.value, e = i2 ? i2.value : '';
+  const first = new Date(y, m, 1), start = new Date(y, m, 1 - first.getDay()), td = today();
+  let cells = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), iso = ymd(d);
+    const cls = [d.getMonth() !== m ? 'out' : '', iso === td ? 'td' : '', (iso === s || iso === e) ? 'sel' : '', (range && s && e && iso > s && iso < e) ? 'in' : ''].join(' ');
+    cells += `<button type="button" class="${cls}" data-d="${iso}" aria-label="${d.getDate()} ${TH_M[d.getMonth()]} ${d.getFullYear()}">${d.getDate()}</button>`;
+  }
+  pop.innerHTML = `${range ? `<p class="dhint">${DP.pick === 'start' ? 'เลือกวันที่เริ่มต้น' : 'เลือกวันที่สิ้นสุด'}</p>` : ''}
+    <div class="dph"><button type="button" data-nav="-12" aria-label="ปีก่อนหน้า">«</button><button type="button" data-nav="-1" aria-label="เดือนก่อนหน้า">‹</button><b>${TH_M[m]} ${y}</b><button type="button" data-nav="1" aria-label="เดือนถัดไป">›</button><button type="button" data-nav="12" aria-label="ปีถัดไป">»</button></div>
+    <div class="dpg">${TH_D.map(w => `<span class="wd">${w}</span>`).join('')}${cells}</div>
+    <div class="dpft"><button type="button" class="btn sm" data-dpclear>ล้าง</button><button type="button" class="btn sm blue" data-dptoday>วันนี้</button></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.dpf');
+  if (b) { if (!b.disabled) openDP(b); return; }
+  if (!DP) return;
+  if (!e.target.closest('.dpop')) return closeDP();
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.nav) { const n = +t.dataset.nav, d = new Date(DP.y, DP.m + n, 1); DP.y = d.getFullYear(); DP.m = d.getMonth(); drawDP(); return; }
+  if (t.hasAttribute('data-dpclear')) { setDP('', ''); DP.pick = 'start'; return closeDP(); }
+  if (t.hasAttribute('data-dptoday')) { const td = today(); setDP(td, DP.range ? td : ''); return closeDP(); }
+  const iso = t.dataset.d; if (!iso) return;
+  if (!DP.range) { setDP(iso); return closeDP(); }
+  if (DP.pick === 'start') { setDP(iso, ''); DP.pick = 'end'; drawDP(); const f = $(`[data-d="${iso}"]`, DP.pop); f && f.focus(); return; }
+  let a = DP.i1.value; let z = iso; if (z < a) { [a, z] = [z, a]; }
+  setDP(a, z); closeDP();
+});
+document.addEventListener('keydown', e => { if (DP && e.key === 'Escape') { e.stopPropagation(); closeDP(); } }, true);
+window.addEventListener('resize', () => closeDP());
+document.addEventListener('scroll', e => { if (DP && !(e.target.closest && e.target.closest('.dpop'))) closeDP(); }, true);
+
+/* ===================== excel ===================== */
+async function getDL(){ try { return window.claude && claude.use ? await claude.use('downloads') : null; } catch(e){ return null; } }
+function toCSV(aoa){ return aoa.map(r => r.map(c => { const s = String(c ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }).join(',')).join('\r\n'); }
+async function exportXlsx(filename, sheets){
+  const dl = await getDL();
+  if (!dl) { toast('ดาวน์โหลดไฟล์ไม่ได้ในหน้านี้ (เปิดหน้านี้ใน claude.ai)', 'err'); return; }
+  let data, fn = filename;
+  if (window.XLSX) {
+    const wb = XLSX.utils.book_new();
+    sheets.forEach(s => { const ws = XLSX.utils.aoa_to_sheet(s.aoa); ws['!cols'] = (s.aoa[0]||[]).map((h,i) => ({wch: Math.min(40, Math.max(10, ...s.aoa.slice(0,200).map(r => String(r[i] ?? '').length + 2)))})); XLSX.utils.book_append_sheet(wb, ws, s.name.slice(0,31)); });
+    data = new Blob([XLSX.write(wb, {bookType:'xlsx', type:'array'})]);
+  } else { fn = filename.replace(/\.xlsx$/,'.csv'); data = '﻿' + toCSV(sheets[0].aoa); }
+  try { await dl.save({filename: fn, data}); toast('ดาวน์โหลด ' + fn + ' แล้ว'); }
+  catch(e){ if (e && e.code === 'declined') return; toast('ดาวน์โหลดไม่สำเร็จ (' + ((e && e.code) || 'error') + ')', 'err'); }
+}
+function parseCSV(text){
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) { const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true; else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += c; }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+async function readSheet(file){
+  let aoa;
+  if (/\.csv$/i.test(file.name)) { let t = await file.text(); if (t.charCodeAt(0) === 0xFEFF) t = t.slice(1); aoa = parseCSV(t); }
+  else { if (!window.XLSX) throw new Error('อ่านไฟล์ Excel ไม่ได้ (โหลดตัวอ่านไฟล์ไม่สำเร็จ) ลองบันทึกเป็น .csv แล้วอัปโหลดใหม่'); const wb = XLSX.read(await file.arrayBuffer(), {type:'array'}); aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:true, defval:''}); }
+  if (!aoa.length) return [];
+  const head = aoa[0].map(h => str(h).replace(/\s*\*$/,''));
+  return aoa.slice(1).map((r, i) => { const o = {__row: i+2}; head.forEach((h, j) => o[h] = r[j]); return o; }).filter(o => head.some(h => str(o[h]) !== ''));
+}
+function mapRow(row, headers){ const o = {__row: row.__row}; headers.forEach(h => o[h.k] = row[h.label]); return o; }
+
+/* ===================== upload modal (generic) ===================== */
+function openUpload(cfg){
+  const m = openModal({ title: cfg.title, size:'wide', body: `
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div class="t"><b>ดาวน์โหลดเทมเพลต</b><div class="hint">กรอกข้อมูลในชีตแรก ห้ามเปลี่ยนชื่อหัวคอลัมน์ (ช่องที่มี * ต้องกรอก)</div></div><button class="btn" data-a="tpl">${ICON.down} ดาวน์โหลดเทมเพลต</button></div>
+      <div class="step"><span class="n">2</span><div class="t"><b>เลือกไฟล์และอัปโหลด</b><div class="hint">${esc(cfg.dupNote)}</div></div><label class="btn" style="position:relative">เลือกไฟล์ (.xlsx, .csv)<input type="file" accept=".xlsx,.xls,.csv" data-a="file" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label><span class="hint" data-a="fname">ยังไม่ได้เลือกไฟล์</span><button class="btn pri" data-a="go" disabled>${ICON.up} อัปโหลด</button></div>
+    </div>
+    <div data-a="result"></div>`, buttons:[{label:'ปิด'}] });
+  let file = null;
+  $('[data-a=tpl]', m).onclick = () => exportXlsx(cfg.templateName, [{name:'ข้อมูล', aoa:[cfg.headers.map(h => h.label + (h.req?' *':''))]}, {name:'ตัวอย่าง', aoa:[cfg.headers.map(h => h.label + (h.req?' *':'')), cfg.headers.map(h => h.sample ?? '')]}]);
+  $('[data-a=file]', m).onchange = e => { file = e.target.files[0] || null; $('[data-a=fname]', m).textContent = file ? file.name : 'ยังไม่ได้เลือกไฟล์'; $('[data-a=go]', m).disabled = !file; };
+  $('[data-a=go]', m).onclick = async () => {
+    if (!file || !guardWrite()) return;
+    const go = $('[data-a=go]', m); go.disabled = true; $('[data-a=result]', m).innerHTML = '<p class="hint">กำลังตรวจสอบและบันทึก…</p>';
+    try {
+      const raw = await readSheet(file);
+      const rows = raw.map(r => mapRow(r, cfg.headers));
+      const out = {total: rows.length, created:0, updated:0, failed:0, errors:[]};
+      const tasks = [];
+      const fail = (row, msg) => { out.failed++; out.errors.push([row.__row, row[cfg.keyField] ?? '', msg]); };
+      cfg.process(rows, {fail, add:(t)=>{ out.created++; tasks.push(t); }, upd:(t)=>{ out.updated++; tasks.push(t); }});
+      const res = await runAll(tasks.map(t => t.fn));
+      res.forEach((r, i) => { if (!r.ok) { const t = tasks[i]; if (t.kind === 'new') out.created--; else out.updated--; out.failed++; out.errors.push([t.row, t.key, writeErr(r.e)]); } });
+      out.errors.sort((a,b) => a[0]-b[0]);
+      $('[data-a=result]', m).innerHTML = `
+        <div class="stats">
+          <div class="stat"><b>${out.total}</b><span>รายการทั้งหมด</span></div>
+          <div class="stat ok"><b>${out.created}</b><span>เพิ่มรายการใหม่</span></div>
+          <div class="stat info"><b>${out.updated}</b><span>แก้ไขทับ (${esc(cfg.keyLabel)}ซ้ำ)</span></div>
+          <div class="stat bad"><b>${out.failed}</b><span>ไม่สำเร็จ</span></div>
+        </div>
+        ${out.errors.length ? `<div class="sec-title">รายการที่ไม่สำเร็จ</div><div class="mini"><table><thead><tr><th>แถวในไฟล์</th><th>${esc(cfg.keyLabel)}</th><th>สาเหตุ</th></tr></thead><tbody>${out.errors.map(e => `<tr><td>${e[0]}</td><td>${esc(e[1])}</td><td>${esc(e[2])}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+    } catch(e){ $('[data-a=result]', m).innerHTML = `<div class="ferr" role="alert">${esc(e.message || e)}</div>`; }
+    finally { go.disabled = !file; }
+  };
+}
+
+/* ===================== WORK ORDERS ===================== */
+const WO_FIELDS = () => [
+  {k:'jobNo', label:'หมายเลขใบงาน', req:1},
+  {k:'origin', label:'สาขาต้นทาง', req:1}, {k:'drop', label:'จุดดรอป'}, {k:'dest', label:'สาขาปลายทาง', req:1},
+  {k:'doneDate', label:'วันที่เสร็จสิ้น', type:'date', req:1},
+  {k:'type', label:'ประเภทใบงาน', list:'dl-wotype'},
+  {k:'empId', label:'รหัสพนักงาน'}, {k:'plate', label:'ทะเบียนรถ', req:1},
+  {k:'freight', label:'ค่าขนส่ง (บาท)', type:'number'}, {k:'other', label:'ค่าอื่นๆ (บาท)', type:'number'},
+  {k:'_total', label:'ยอดเงินรวม', type:'calc'},
+  {k:'deductPct', label:'เปอร์เซ็นต์ที่หัก (%)', type:'number'},
+  {k:'_payable', label:'ยอดที่ควรจ่าย', type:'calc'},
+  {k:'fleetCode', label:'รหัสฟลีท', list:'dl-fleet'}, {k:'fleetName', label:'ชื่อฟลีท'}
+];
+const WO_COLS = [
+  ['หมายเลขใบงาน', w => w.jobNo], ['สาขาต้นทาง', w => w.origin], ['จุดดรอป', w => w.drop], ['สาขาปลายทาง', w => w.dest],
+  ['วันที่เสร็จสิ้น', w => w.doneDate, 'date'], ['ประเภทใบงาน', w => w.type], ['รหัสพนักงาน', w => w.empId], ['ทะเบียนรถ', w => w.plate],
+  ['ค่าขนส่ง', w => num(w.freight), 'money'], ['ค่าอื่นๆ', w => num(w.other), 'money'], ['ยอดเงินรวม', woTotal, 'money'],
+  ['เปอร์เซ็นต์ที่หัก', w => num(w.deductPct), 'pct'], ['ยอดที่ควรจ่าย', woPayable, 'money'],
+  ['รหัสฟลีท', w => w.fleetCode], ['ชื่อฟลีท', w => w.fleetName], ['หมายเลขทำจ่าย', w => w.payNo || ''],
+  ['สถานะสร้างรายการทำจ่าย', createStatus, 'badge'], ['สถานะทำจ่าย', itemPayStatus, 'badge']
+];
+function wireWoCalc(m){
+  const upd = () => { const v = readForm(m); $('[data-calc=_total]', m).textContent = money(woTotal(v)); $('[data-calc=_payable]', m).textContent = money(woPayable(v)); };
+  m.addEventListener('input', upd); upd();
+}
+function validateWo(v){
+  let e = checkReq(WO_FIELDS(), v); if (e) return e;
+  if (!okId(v.jobNo)) return 'หมายเลขใบงานใช้ได้เฉพาะตัวอักษรภาษาอังกฤษ ตัวเลข และ - _ . : @ +';
+  if (num(v.freight) < 0 || num(v.other) < 0) return 'จำนวนเงินต้องไม่ติดลบ';
+  const p = num(v.deductPct); if (p < 0 || p > 100) return 'เปอร์เซ็นต์ที่หักต้องอยู่ระหว่าง 0–100';
+  return '';
+}
+const woRecord = (v, payNo) => ({jobNo:v.jobNo, origin:v.origin, drop:v.drop, dest:v.dest, doneDate:v.doneDate, type:v.type, empId:v.empId, plate:v.plate,
+  freight:round2(num(v.freight)), other:round2(num(v.other)), deductPct:num(v.deductPct), fleetCode:v.fleetCode, fleetName:v.fleetName || (fleetBy(v.fleetCode)||{}).name || '', payNo: payNo || ''});
+function woForm(rec){
+  if (!guardWrite()) return;
+  const isEdit = !!rec;
+  const fields = WO_FIELDS().map(f => {
+    if (isEdit && f.k === 'jobNo') return {...f, ro:1};
+    if (isEdit && rec.payNo && (f.k === 'fleetCode' || f.k === 'fleetName')) return {...f, ro:1, hint: f.k==='fleetCode' ? 'ผูกกับรายการชำระแล้ว แก้ไขฟลีทไม่ได้' : ''};
+    return f;
+  });
+  const save = async (m) => {
+    const v = readForm(m); const err = validateWo(v); if (err) { showErr(m, err); return false; }
+    if (!isEdit && S.workorders.some(w => lc(w.jobNo) === lc(v.jobNo))) { showErr(m, 'หมายเลขใบงานนี้มีอยู่แล้ว ใช้ปุ่ม "แก้ไข" หรืออัปโหลดเพื่อแก้ไขทับ'); return false; }
+    await put('workorders', isEdit ? rec._id : v.jobNo, woRecord(v, isEdit ? rec.payNo : ''));
+    toast(isEdit ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่มใบงาน ' + v.jobNo + ' แล้ว');
+  };
+  const buttons = [{label:'ยกเลิก'}];
+  if (!isEdit) buttons.push({label:'บันทึกและเพิ่มรายการถัดไป', onClick: async m => { const r = await save(m); if (r === false) return false; m.close(); woForm(); return false; }});
+  buttons.push({label:'บันทึก', cls:'pri', onClick: save});
+  openModal({title: isEdit ? 'แก้ไขใบงาน ' + rec.jobNo : 'เพิ่มรายการใบงาน', body: formHTML(fields, rec || {doneDate: today(), deductPct: 0, other: 0}), buttons, onMount: m => { wireWoCalc(m); wireFleet(m); }});
+}
+function woView(w){
+  openModal({title:'ใบงาน ' + w.jobNo, body: dlHTML(WO_COLS.map(([l,g,t]) => [l, fmtCell(g(w), t)])) + (w.updatedAt ? `<p class="hint" style="margin-top:14px">แก้ไขล่าสุด ${esc(new Date(w.updatedAt).toLocaleString('th-TH'))}</p>` : ''), buttons:[{label:'ปิด'}]});
+}
+const WO_UP_HEADERS = [
+  {k:'jobNo', label:'หมายเลขใบงาน', req:1, sample:'SPX-0001'}, {k:'origin', label:'สาขาต้นทาง', req:1, sample:'SOC บางนา'}, {k:'drop', label:'จุดดรอป', sample:'Hub ลาดกระบัง'},
+  {k:'dest', label:'สาขาปลายทาง', req:1, sample:'Hub ชลบุรี'}, {k:'doneDate', label:'วันที่เสร็จสิ้น', req:1, sample:'2026-11-01'}, {k:'type', label:'ประเภทใบงาน', sample:'Linehaul'},
+  {k:'empId', label:'รหัสพนักงาน', sample:'EMP001'}, {k:'plate', label:'ทะเบียนรถ', req:1, sample:'70-1234 กทม'}, {k:'freight', label:'ค่าขนส่ง', sample:3500},
+  {k:'other', label:'ค่าอื่นๆ', sample:200}, {k:'deductPct', label:'เปอร์เซ็นต์ที่หัก', sample:3}, {k:'fleetCode', label:'รหัสฟลีท', sample:'F001'}, {k:'fleetName', label:'ชื่อฟลีท', sample:''}
+];
+function woUpload(){
+  if (!guardWrite()) return;
+  openUpload({ title:'อัปโหลดรายการใบงาน', templateName:'template_รายการใบงาน.xlsx', headers: WO_UP_HEADERS, keyField:'jobNo', keyLabel:'หมายเลขใบงาน',
+    dupNote:'ระบบตรวจหมายเลขใบงาน: ถ้าซ้ำกับที่มีอยู่ = แก้ไขทับข้อมูลเดิม, ถ้าไม่ซ้ำ = เพิ่มเป็นรายการใหม่',
+    process(rows, {fail, add, upd}){
+      const seen = new Map();
+      rows.forEach(r => {
+        const v = {}; WO_UP_HEADERS.forEach(h => v[h.k] = str(r[h.k]));
+        const jobNo = v.jobNo;
+        if (!jobNo) return fail(r, 'ไม่มีหมายเลขใบงาน');
+        if (!okId(jobNo)) return fail(r, 'หมายเลขใบงานมีอักขระที่ไม่รองรับ');
+        if (seen.has(lc(jobNo))) return fail(r, 'หมายเลขใบงานซ้ำในไฟล์ (แถว ' + seen.get(lc(jobNo)) + ')');
+        seen.set(lc(jobNo), r.__row);
+        const d = parseDate(r.doneDate); if (!d) return fail(r, 'วันที่เสร็จสิ้นไม่ถูกต้อง (ใช้ ปปปป-ดด-วว หรือ วว/ดด/ปปปป)');
+        const fr = parseNum(r.freight, 0), ot = parseNum(r.other, 0), pc = parseNum(r.deductPct, 0);
+        if (!isFinite(fr) || fr < 0) return fail(r, 'ค่าขนส่งไม่ถูกต้อง'); if (!isFinite(ot) || ot < 0) return fail(r, 'ค่าอื่นๆ ไม่ถูกต้อง');
+        if (!isFinite(pc) || pc < 0 || pc > 100) return fail(r, 'เปอร์เซ็นต์ที่หักต้องอยู่ระหว่าง 0–100');
+        if (!v.origin) return fail(r, 'ไม่มีสาขาต้นทาง'); if (!v.dest) return fail(r, 'ไม่มีสาขาปลายทาง'); if (!v.plate) return fail(r, 'ไม่มีทะเบียนรถ');
+        const ex = S.workorders.find(w => lc(w.jobNo) === lc(jobNo));
+        if (ex && isLockedPaid(ex)) return fail(r, 'ใบงานนี้ชำระแล้ว แก้ไขทับไม่ได้');
+        if (ex && ex.payNo && lc(ex.fleetCode) !== lc(v.fleetCode)) return fail(r, 'ใบงานผูกกับรายการชำระแล้ว เปลี่ยนรหัสฟลีทไม่ได้');
+        const rec = woRecord({...v, doneDate:d, freight:fr, other:ot, deductPct:pc}, ex ? ex.payNo : '');
+        if (ex && !v.fleetName) rec.fleetName = ex.fleetName || rec.fleetName;
+        const id = ex ? ex._id : jobNo;
+        (ex ? upd : add)({fn: () => put('workorders', id, rec), kind: ex ? 'upd' : 'new', row: r.__row, key: jobNo});
+      });
+    }});
+}
+function woCreatePayment(){
+  if (!guardWrite()) return;
+  const sel = [...SEL.workorders].map(id => S.workorders.find(w => w._id === id)).filter(Boolean);
+  if (!sel.length) return toast('ติ๊กเลือกใบงานที่ต้องการรวมก่อน แล้วกด "สร้างรายการชำระ"', 'err');
+  if (sel.some(w => w.payNo)) return toast('มีใบงานที่สร้างรายการทำจ่ายไปแล้ว กรุณาเลือกเฉพาะที่ยังไม่สร้าง', 'err');
+  const base = round2(sel.reduce((s,w) => s + woPayable(w), 0));
+  const opts = fleetOpts();
+  const info = c => { const f = fleetBy(c); if (f) return f; const o = opts.find(x => lc(x.code) === lc(c)); return o ? {code:o.code, name:o.name} : {code:c, name:''}; };
+  const firstCode = (sel.find(w => str(w.fleetCode)) || {}).fleetCode || '';
+  const exists = c => S.payments.filter(p => lc(p.fleetCode) === lc(c) && payStatus(p) === 'รอชำระ').sort((a,b) => String(b.payNo).localeCompare(a.payNo));
+  const newNo = () => nextNo('PAY', S.payments, 'payNo');
+  const st = {code: firstCode, mode:'new', no:'', v:{createdDate: today()}};
+  const setFleet = c => { st.code = c; const fl = info(c); st.v.creditDays = fl.creditDays ?? 30; st.v.fastPct = fl.fastPct ?? 0; const ex = exists(c); st.no = ex[0] ? ex[0].payNo : ''; if (!ex.length) st.mode = 'new'; };
+  setFleet(firstCode);
+  const topArea = () => {
+    const fl = info(st.code), diff = sel.filter(w => lc(w.fleetCode) !== lc(st.code)).length;
+    return `<div class="form">
+      <div><label for="f_fleet"><span class="req">*</span>ฟลีท</label><select id="f_fleet" data-x="fleet"><option value="">— เลือกฟลีท —</option>${opts.map(o => `<option value="${esc(o.code)}" ${lc(o.code)===lc(st.code)?'selected':''}>${esc(o.code + ' · ' + o.name)}</option>`).join('')}</select>${diff ? `<div class="hint" style="color:var(--warn)">ใบงาน ${diff} รายการจะถูกเปลี่ยนเป็นฟลีทนี้</div>` : ''}</div>
+      <div><label>จำนวนใบงานที่เลือก</label><output class="calc">${sel.length} รายการ</output></div>
+      <div><label>ยอดที่ควรจ่ายรวม</label><output class="calc">${money(base)}&nbsp;บาท</output></div>
+      <div><label>ธนาคาร</label><output class="calc" style="font-weight:500">${esc(fl.bankName || '-')}</output></div>
+      <div><label>ชื่อบัญชี</label><output class="calc" style="font-weight:500">${esc(fl.accName || '-')}</output></div>
+      <div><label>เลขที่บัญชี</label><output class="calc" style="font-weight:500">${esc(fl.accNo || '-')}</output></div></div>`;
+  };
+  const formArea = () => {
+    const exist = exists(st.code);
+    const isNew = st.mode === 'new', p = isNew ? null : payBy(st.no);
+    const modeSel = `<div><label for="f_mode"><span class="req">*</span>การสร้างรายการ</label><select id="f_mode" data-x="mode"><option value="new" ${isNew?'selected':''}>สร้างรายการใหม่</option><option value="exist" ${!isNew?'selected':''} ${exist.length?'':'disabled'}>รายการที่มีอยู่${exist.length?'':' (ไม่มีรายการรอชำระ)'}</option></select></div>`;
+    const noFld = isNew ? `<div><label for="f_no">หมายเลขทำจ่าย</label><input id="f_no" value="${esc(newNo())}" readonly><div class="hint">สร้างขึ้นโดยอัตโนมัติ</div></div>`
+      : `<div><label for="f_no"><span class="req">*</span>หมายเลขทำจ่าย</label><select id="f_no" data-x="no">${exist.map(e => `<option value="${esc(e.payNo)}" ${e.payNo===st.no?'selected':''}>${esc(e.payNo)}</option>`).join('')}</select><div class="hint">แสดงเฉพาะสถานะ รอชำระ</div></div>`;
+    const v = isNew ? st.v : {createdDate: p.createdDate, creditDays: p.creditDays, fastPct: p.fastPct};
+    const fields = [{k:'createdDate', label:'วันที่สร้างบิล', type:'date', req:isNew, ro:!isNew}, {k:'creditDays', label:'เครดิตเทอม (วัน)', type:'number', req:isNew, ro:!isNew}, {k:'_due', label:'วันที่ต้องชำระ', type:'calc'}, {k:'fastPct', label:'หัก Fast Payment (%)', type:'number', ro:!isNew}];
+    const extra = p ? `<div><label>ใบงานเดิมในรายการ</label><output class="calc">${(p.jobIds||[]).length} รายการ</output></div><div><label>ยอดที่ควรจ่ายหลังรวม</label><output class="calc">${money(calcPay(p).base + base)} บาท</output></div>` : '';
+    return `<div class="form">${modeSel}${noFld}<div></div>${fields.map(f => fieldHTML(f, v[f.k] ?? '')).join('')}${extra}</div>
+      <p class="hint" style="margin-top:12px">${isNew ? `ยืนยันแล้ว ใบงานที่เลือกทั้ง ${sel.length} รายการจะถูกรวมเป็น 1 รายการใหม่ในเมนู "รายการชำระ"` : `ยืนยันแล้ว ใบงานที่เลือกทั้ง ${sel.length} รายการจะถูกเพิ่มเข้าไปในรายการชำระที่เลือก`} — ค่าใช้จ่ายอื่น (ค่างวด ค่าน้ำมัน ฯลฯ) แก้ไขได้ภายหลังที่ปุ่ม "แก้ไขค่าใช้จ่าย"</p>`;
+  };
+  openModal({ title:'สร้างรายการชำระ', body: `<div data-a="top"></div><div class="sec-title" style="margin-top:18px">รายละเอียดบิล</div><div data-a="fa"></div>`,
+    onMount: m => {
+      const fa = $('[data-a=fa]', m), top = $('[data-a=top]', m);
+      const due = () => { const v = readForm(fa); const d = parseDate(v.createdDate); $('[data-calc=_due]', m).textContent = d ? fdate(addDays(d, num(v.creditDays))) : '-'; };
+      const draw = () => { top.innerHTML = topArea(); fa.innerHTML = formArea(); due(); };
+      fa.addEventListener('input', e => { if (st.mode === 'new' && e.target.dataset.k) st.v[e.target.dataset.k] = e.target.value; due(); });
+      m.addEventListener('change', e => { const x = e.target.dataset.x; if (x === 'fleet') { setFleet(e.target.value); draw(); $('#f_fleet', m).focus(); } else if (x === 'mode') { st.mode = e.target.value; draw(); } else if (x === 'no') { st.no = e.target.value; draw(); } });
+      draw();
+    },
+    buttons:[{label:'ยกเลิก'}, {label:'ยืนยันสร้างรายการชำระ', cls:'pri', onClick: async m => {
+      if (!st.code) { showErr(m, 'กรุณาเลือกฟลีท'); return false; }
+      const fresh = sel.map(w => S.workorders.find(x => x._id === w._id)); if (fresh.some(w => !w || w.payNo)) { showErr(m, 'มีใบงานถูกสร้างรายการทำจ่ายไปแล้วระหว่างนี้ กรุณาเลือกใหม่'); return false; }
+      const fl = info(st.code), code = fl.code;
+      let payNo;
+      if (st.mode === 'exist') {
+        const p = payBy(st.no); if (!p || payStatus(p) !== 'รอชำระ') { showErr(m, 'รายการชำระนี้ไม่อยู่ในสถานะ รอชำระ แล้ว กรุณาเลือกใหม่'); return false; }
+        payNo = p.payNo;
+        await put('payments', p._id, {...p, jobIds: [...new Set([...(p.jobIds||[]), ...sel.map(w => w._id)])]});
+      } else {
+        const v = readForm($('[data-a=fa]', m)); const cd = parseDate(v.createdDate);
+        if (!cd) { showErr(m, 'วันที่สร้างบิลไม่ถูกต้อง'); return false; }
+        if (num(v.creditDays) < 0 || num(v.fastPct) < 0 || num(v.fastPct) > 100) { showErr(m, 'ตรวจสอบเครดิตเทอม / เปอร์เซ็นต์ Fast Payment'); return false; }
+        payNo = newNo();
+        const doc = { payNo, fleetCode: code, fleetName: fl.name || '', bankName: fl.bankName || '', accName: fl.accName || '', accNo: fl.accNo || '',
+          source:'รายการใบงาน', createdDate: cd, creditDays: num(v.creditDays), dueDate: addDays(cd, num(v.creditDays)), jobIds: sel.map(w => w._id),
+          fastPct: num(v.fastPct), ded: {installment:0, fuel:0, repair:0, insurance:0, gps:0, traffic:0, other:0}, fineIds:[], advIds:[], paid:null, createdAt: new Date().toISOString() };
+        await put('payments', payNo, doc);
+      }
+      const res = await runAll(fresh.map(w => () => put('workorders', w._id, {...w, payNo, fleetCode: code, fleetName: fl.name || w.fleetName || ''})));
+      SEL.workorders.clear(); scheduleRender();
+      const bad = res.filter(r => !r.ok).length;
+      const msg = st.mode === 'exist' ? `เพิ่มใบงานเข้ารายการชำระ ${payNo} แล้ว` : `สร้างรายการชำระ ${payNo} แล้ว`;
+      toast(bad ? `${msg} แต่ผูกใบงานไม่สำเร็จ ${bad} รายการ` : msg, bad ? 'err' : '', {label:'ไปที่รายการชำระ', fn: () => { location.hash = 'payments'; }});
+    }}]
+  });
+}
+
+/* ===================== FINES ===================== */
+const FINE_FIELDS = () => [
+  {k:'date', label:'วันที่เกิดค่าปรับ', type:'date', req:1}, {k:'jobNo', label:'หมายเลขใบงาน', list:'dl-job', req:1}, {k:'type', label:'ประเภทค่าปรับ', list:'dl-finetype', req:1},
+  {k:'amount', label:'จำนวนเงินค่าปรับ (บาท)', type:'number', req:1}, {k:'plate', label:'ทะเบียนรถ'}, {k:'empId', label:'รหัสพนักงาน'},
+  {k:'fleetCode', label:'รหัสฟลีท', list:'dl-fleet', req:1}, {k:'fleetName', label:'ชื่อฟลีท'}, {k:'remark', label:'หมายเหตุ', type:'textarea', full:1}
+];
+const FINE_COLS = [
+  ['วันที่เกิดค่าปรับ', f => f.date, 'date'], ['หมายเลขใบงาน', f => f.jobNo], ['ประเภทค่าปรับ', f => f.type], ['จำนวนเงิน', f => num(f.amount), 'money'],
+  ['หมายเหตุ', f => f.remark], ['ทะเบียนรถ', f => f.plate], ['รหัสพนักงาน', f => f.empId], ['รหัสฟลีท', f => f.fleetCode], ['ชื่อฟลีท', f => f.fleetName],
+  ['หมายเลขทำจ่าย', f => f.payNo || ''], ['สถานะสร้างรายการทำจ่าย', createStatus, 'badge'], ['สถานะทำจ่าย', itemPayStatus, 'badge']
+];
+const fineRecord = (v, payNo) => ({date:v.date, jobNo:v.jobNo, type:v.type, amount:round2(num(v.amount)), remark:v.remark||'', plate:v.plate||'', empId:v.empId||'', fleetCode:v.fleetCode, fleetName:v.fleetName || (fleetBy(v.fleetCode)||{}).name || '', payNo: payNo||''});
+function fineForm(rec){
+  if (!guardWrite()) return;
+  const isEdit = !!rec;
+  const fields = FINE_FIELDS().map(f => (isEdit && rec.payNo && (f.k==='fleetCode'||f.k==='fleetName')) ? {...f, ro:1} : f);
+  const save = async m => {
+    const v = readForm(m); const e = checkReq(fields, v); if (e) { showErr(m, e); return false; }
+    if (num(v.amount) <= 0) { showErr(m, 'จำนวนเงินค่าปรับต้องมากกว่า 0'); return false; }
+    await put('fines', isEdit ? rec._id : rid('FN'), fineRecord(v, isEdit ? rec.payNo : ''));
+    toast(isEdit ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่มค่าปรับแล้ว');
+  };
+  openModal({title: isEdit ? 'แก้ไขค่าปรับ' : 'เพิ่มรายการค่าปรับ', body: formHTML(fields, rec || {date: today()}) + '<p class="hint" style="margin-top:10px">กรอกหมายเลขใบงานที่มีในระบบ ระบบจะเติมทะเบียนรถ รหัสพนักงาน และฟลีทให้อัตโนมัติ</p>',
+    onMount: m => { wireFleet(m); wireJobLookup(m); }, buttons:[{label:'ยกเลิก'}, {label:'บันทึก', cls:'pri', onClick: save}]});
+}
+const FINE_UP_HEADERS = [
+  {k:'date', label:'วันที่เกิดค่าปรับ', req:1, sample:'2026-11-02'}, {k:'jobNo', label:'หมายเลขใบงาน', req:1, sample:'SPX-0001'}, {k:'type', label:'ประเภทค่าปรับ', req:1, sample:'ส่งล่าช้า'},
+  {k:'amount', label:'จำนวนเงิน', req:1, sample:500}, {k:'remark', label:'หมายเหตุ', sample:''}, {k:'plate', label:'ทะเบียนรถ', sample:''}, {k:'empId', label:'รหัสพนักงาน', sample:''},
+  {k:'fleetCode', label:'รหัสฟลีท', sample:'F001'}, {k:'fleetName', label:'ชื่อฟลีท', sample:''}
+];
+function fineUpload(){
+  if (!guardWrite()) return;
+  openUpload({ title:'อัปโหลดรายการค่าปรับ', templateName:'template_ค่าปรับ.xlsx', headers: FINE_UP_HEADERS, keyField:'jobNo', keyLabel:'หมายเลขใบงาน',
+    dupNote:'ถ้า วันที่ + หมายเลขใบงาน + ประเภทค่าปรับ ซ้ำกับที่มีอยู่ = แก้ไขทับ, ไม่ซ้ำ = เพิ่มใหม่ (ถ้าไม่กรอกฟลีท ระบบดึงจากใบงาน)',
+    process(rows, {fail, add, upd}){
+      const seen = new Set();
+      rows.forEach(r => {
+        const v = {}; FINE_UP_HEADERS.forEach(h => v[h.k] = str(r[h.k]));
+        const d = parseDate(r.date); if (!d) return fail(r, 'วันที่เกิดค่าปรับไม่ถูกต้อง');
+        if (!v.jobNo) return fail(r, 'ไม่มีหมายเลขใบงาน'); if (!v.type) return fail(r, 'ไม่มีประเภทค่าปรับ');
+        const amt = parseNum(r.amount, NaN); if (!isFinite(amt) || amt <= 0) return fail(r, 'จำนวนเงินไม่ถูกต้อง');
+        const w = S.workorders.find(x => lc(x.jobNo) === lc(v.jobNo));
+        if (w) { v.plate = v.plate || w.plate || ''; v.empId = v.empId || w.empId || ''; v.fleetCode = v.fleetCode || w.fleetCode; v.fleetName = v.fleetName || w.fleetName; }
+        if (!v.fleetCode) return fail(r, 'ไม่มีรหัสฟลีท และไม่พบใบงานในระบบ');
+        const key = [d, lc(v.jobNo), lc(v.type)].join('|'); if (seen.has(key)) return fail(r, 'ข้อมูลซ้ำในไฟล์'); seen.add(key);
+        const ex = S.fines.find(f => f.date === d && lc(f.jobNo) === lc(v.jobNo) && lc(f.type) === lc(v.type));
+        if (ex && isLockedPaid(ex)) return fail(r, 'ค่าปรับนี้ชำระแล้ว แก้ไขทับไม่ได้');
+        const rec = fineRecord({...v, date:d, amount:amt}, ex ? ex.payNo : ''); if (ex && ex.payNo) { rec.fleetCode = ex.fleetCode; rec.fleetName = ex.fleetName; }
+        const id = ex ? ex._id : rid('FN');
+        (ex ? upd : add)({fn: () => put('fines', id, rec), kind: ex ? 'upd' : 'new', row: r.__row, key: v.jobNo});
+      });
+    }});
+}
+
+/* ===================== ADVANCES ===================== */
+const ADV_FIELDS = () => [
+  {k:'advNo', label:'เลขที่เบิก', ro:1, hint:'ระบบสร้างให้อัตโนมัติ'}, {k:'reqDate', label:'วันที่ขอเบิก', type:'date', req:1}, {k:'amount', label:'จำนวนเงินที่เบิก (บาท)', type:'number', req:1},
+  {k:'fleetCode', label:'รหัสฟลีท', list:'dl-fleet', req:1}, {k:'fleetName', label:'ชื่อฟลีท'}, {k:'plate', label:'ทะเบียนรถ'},
+  {k:'empId', label:'รหัสพนักงาน'}, {k:'reason', label:'เหตุผลการเบิก', list:'dl-advreason', req:1}, {k:'transferDate', label:'วันที่โอนเงินเบิก', type:'date'},
+  {k:'remark', label:'หมายเหตุ', type:'textarea', full:1}
+];
+const ADV_COLS = [
+  ['เลขที่เบิก', a => a.advNo], ['วันที่ขอเบิก', a => a.reqDate, 'date'], ['รหัสฟลีท', a => a.fleetCode], ['ชื่อฟลีท', a => a.fleetName], ['ทะเบียนรถ', a => a.plate],
+  ['รหัสพนักงาน', a => a.empId], ['เหตุผลการเบิก', a => a.reason], ['จำนวนเงินที่เบิก', a => num(a.amount), 'money'],
+  ['วันที่โอนเงินเบิก', a => a.transferDate, 'date'],
+  ['หมายเลขทำจ่าย', a => a.payNo || ''], ['สถานะสร้างรายการทำจ่าย', createStatus, 'badge'], ['สถานะหักคืน', advReturnStatus, 'badge'], ['หมายเหตุ', a => a.remark]
+];
+function advForm(rec){
+  if (!guardWrite()) return;
+  const isEdit = !!rec;
+  const fields = ADV_FIELDS().filter(f => f.k !== '_sp').map(f => (isEdit && rec.payNo && ['fleetCode','fleetName','amount'].includes(f.k)) ? {...f, ro:1} : f);
+  const save = async m => {
+    const v = readForm(m); const e = checkReq(fields, v); if (e) { showErr(m, e); return false; }
+    if (num(v.amount) <= 0) { showErr(m, 'จำนวนเงินต้องมากกว่า 0'); return false; }
+    const advNo = isEdit ? rec.advNo : nextNo('ADV', S.advances, 'advNo');
+    const base = isEdit ? {...rec} : {approval:'รออนุมัติ', approveDate:'', transferDate:'', payNo:''};
+    delete base._id;
+    await put('advances', advNo, {...base, advNo, reqDate:v.reqDate, amount:round2(num(v.amount)), fleetCode:v.fleetCode, fleetName:v.fleetName || (fleetBy(v.fleetCode)||{}).name || '', plate:v.plate, empId:v.empId, reason:v.reason, remark:v.remark, transferDate:v.transferDate});
+    toast(isEdit ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่มรายการเบิก ' + advNo + ' แล้ว');
+  };
+  openModal({title: isEdit ? 'แก้ไขเบิกล่วงหน้า ' + rec.advNo : 'เพิ่มรายการเบิกล่วงหน้า', body: formHTML(fields, rec || {reqDate: today(), advNo:'(สร้างอัตโนมัติ)'}),
+    onMount: wireFleet, buttons:[{label:'ยกเลิก'}, {label:'บันทึก', cls:'pri', onClick: save}]});
+}
+function advApprove(a, ok){
+  if (!guardWrite()) return;
+  const fields = ok ? [{k:'transferDate', label:'วันที่โอนเงินเบิก', type:'date', req:1}, {k:'remark', label:'หมายเหตุ', type:'textarea', full:1}]
+                    : [{k:'remark', label:'เหตุผลที่ไม่อนุมัติ', type:'textarea', full:1, req:1}];
+  openModal({title: (ok ? 'อนุมัติ ' : 'ไม่อนุมัติ ') + a.advNo, size:'narrow',
+    body: dlHTML([['ฟลีท', esc(a.fleetCode + ' · ' + a.fleetName)], ['จำนวนเงิน', money(a.amount) + ' บาท'], ['เหตุผล', esc(a.reason)]]) + '<div style="height:14px"></div>' + formHTML(fields, {transferDate: today(), remark: a.remark}),
+    buttons:[{label:'ยกเลิก'}, {label: ok ? 'อนุมัติ' : 'ไม่อนุมัติ', cls: ok ? 'pri' : 'dark', onClick: async m => {
+      const v = readForm(m); const e = checkReq(fields, v); if (e) { showErr(m, e); return false; }
+      const r = {...a}; delete r._id; r.approval = ok ? 'อนุมัติ' : 'ไม่อนุมัติ'; r.approveDate = today(); r.remark = v.remark; if (ok) r.transferDate = v.transferDate;
+      await put('advances', a._id, r); toast(ok ? 'อนุมัติแล้ว' : 'บันทึกไม่อนุมัติแล้ว');
+    }}]});
+}
+const ADV_UP_HEADERS = [
+  {k:'advNo', label:'เลขที่เบิก', sample:'(เว้นว่าง = สร้างใหม่)'}, {k:'reqDate', label:'วันที่ขอเบิก', req:1, sample:'2026-11-03'}, {k:'fleetCode', label:'รหัสฟลีท', req:1, sample:'F001'},
+  {k:'fleetName', label:'ชื่อฟลีท', sample:''}, {k:'plate', label:'ทะเบียนรถ', sample:''}, {k:'empId', label:'รหัสพนักงาน', sample:''}, {k:'reason', label:'เหตุผลการเบิก', req:1, sample:'ค่าน้ำมัน'},
+  {k:'amount', label:'จำนวนเงิน', req:1, sample:5000}, {k:'remark', label:'หมายเหตุ', sample:''}
+];
+function advUpload(){
+  if (!guardWrite()) return;
+  openUpload({ title:'อัปโหลดรายการเบิกล่วงหน้า', templateName:'template_เบิกล่วงหน้า.xlsx', headers: ADV_UP_HEADERS, keyField:'advNo', keyLabel:'เลขที่เบิก',
+    dupNote:'ถ้ากรอกเลขที่เบิกที่มีอยู่ = แก้ไขทับ, เว้นว่างหรือไม่พบ = เพิ่มใหม่',
+    process(rows, {fail, add, upd}){
+      let pool = S.advances.slice();
+      rows.forEach(r => {
+        const v = {}; ADV_UP_HEADERS.forEach(h => v[h.k] = str(r[h.k])); if (v.advNo.startsWith('(')) v.advNo = '';
+        const d = parseDate(r.reqDate); if (!d) return fail(r, 'วันที่ขอเบิกไม่ถูกต้อง');
+        if (!v.fleetCode) return fail(r, 'ไม่มีรหัสฟลีท'); if (!v.reason) return fail(r, 'ไม่มีเหตุผลการเบิก');
+        const amt = parseNum(r.amount, NaN); if (!isFinite(amt) || amt <= 0) return fail(r, 'จำนวนเงินไม่ถูกต้อง');
+        const ex = v.advNo ? S.advances.find(a => lc(a.advNo) === lc(v.advNo)) : null;
+        if (ex && ex.payNo) return fail(r, 'รายการนี้ผูกกับรายการชำระแล้ว แก้ไขทับไม่ได้');
+        const advNo = ex ? ex.advNo : (v.advNo && okId(v.advNo) ? v.advNo : nextNo('ADV', pool, 'advNo'));
+        pool.push({advNo});
+        const base = ex ? {...ex} : {approval:'รออนุมัติ', approveDate:'', transferDate:'', payNo:''}; delete base._id;
+        const rec = {...base, advNo, reqDate:d, fleetCode:v.fleetCode, fleetName:v.fleetName || (fleetBy(v.fleetCode)||{}).name || '', plate:v.plate, empId:v.empId, reason:v.reason, amount:round2(amt), remark:v.remark};
+        (ex ? upd : add)({fn: () => put('advances', advNo, rec), kind: ex ? 'upd' : 'new', row: r.__row, key: advNo});
+      });
+    }});
+}
+
+/* ===== attach fines / advances to a payment ===== */
+function attachToPayment(kind){
+  if (!guardWrite()) return;
+  const isFine = kind === 'fines';
+  const sel = [...SEL[kind]].map(id => S[kind].find(x => x._id === id)).filter(Boolean);
+  if (!sel.length) return toast('ติ๊กเลือกรายการที่ต้องการก่อน', 'err');
+  if (sel.some(x => x.payNo)) return toast('มีรายการที่สร้างรายการทำจ่ายไปแล้ว กรุณาเลือกเฉพาะที่ยังไม่สร้าง', 'err');
+  const fl = [...new Set(sel.map(x => lc(x.fleetCode)))];
+  if (fl.length > 1) return toast('เลือกได้ครั้งละ 1 ฟลีท', 'err');
+  const code = sel[0].fleetCode;
+  const opts = S.payments.filter(p => lc(p.fleetCode) === lc(code) && !p.paid).sort((a,b) => String(b.payNo).localeCompare(a.payNo));
+  const total = round2(sel.reduce((s,x) => s + num(x.amount), 0));
+  if (!opts.length) {
+    openModal({title:'สร้างรายการชำระ', size:'narrow', body:`<p>ฟลีท <b>${esc(code)}</b> ยังไม่มีรายการชำระที่รอชำระ</p><p class="hint">${isFine?'ค่าปรับ':'เงินเบิกล่วงหน้า'}จะถูกหักจากบิลค่าขนส่งของฟลีท — สร้างรายการชำระจากเมนู "รายการใบงาน" ก่อน แล้วกลับมาทำรายการนี้</p>`,
+      buttons:[{label:'ปิด'}, {label:'ไปที่รายการใบงาน', cls:'pri', onClick:()=>{ location.hash='workorders'; }}]});
+    return;
+  }
+  openModal({ title:'สร้างรายการชำระ (หัก' + (isFine ? 'ค่าปรับ' : 'คืนเงินเบิกล่วงหน้า') + ')', size:'narrow', body: `
+    ${dlHTML([['ฟลีท', esc(code + ' · ' + (sel[0].fleetName||''))], ['จำนวนรายการ', sel.length + ' รายการ'], ['ยอดที่จะหัก', '<b>' + money(total) + '</b> บาท']])}
+    <div class="form" style="grid-template-columns:1fr;margin-top:16px"><div><label for="f_pay"><span class="req">*</span>เลือกรายการชำระที่จะหัก</label>
+    <select id="f_pay" data-k="payNo">${opts.map(p => { const c = calcPay(p); return `<option value="${esc(p.payNo)}">${esc(p.payNo)} · ครบกำหนด ${fdate(p.dueDate)} · ยอด ${money(c.final)}</option>`; }).join('')}</select></div></div>
+    <p class="hint" style="margin-top:10px">ยอดนี้จะไปอยู่ในช่อง "${isFine ? 'ค่าปรับ' : 'ค่าเบิกล่วงหน้า'}" ของรายการชำระที่เลือก</p>`,
+    buttons:[{label:'ยกเลิก'}, {label:'ยืนยัน', cls:'pri', onClick: async m => {
+      const payNo = readForm(m).payNo; const p = payBy(payNo); if (!p || p.paid) { showErr(m, 'รายการชำระนี้ไม่พร้อมใช้งาน'); return false; }
+      const field = isFine ? 'fineIds' : 'advIds';
+      const np = {...p, [field]: [...new Set([...(p[field]||[]), ...sel.map(x => x._id)])]};
+      await put('payments', p._id, np);
+      await runAll(sel.map(x => () => put(kind, x._id, {...x, payNo})));
+      SEL[kind].clear(); scheduleRender();
+      toast('เพิ่มเข้ารายการชำระ ' + payNo + ' แล้ว', '', {label:'ดูรายการชำระ', fn:() => { location.hash='payments'; }});
+    }}]});
+}
+
+/* ===================== PAYMENTS ===================== */
+const PAY_COLS = [
+  ['หมายเลขทำจ่าย', p => p.payNo], ['รหัสฟลีท', p => p.fleetCode], ['ชื่อฟลีท', p => p.fleetName], ['ชื่อธนาคาร', p => p.bankName], ['ชื่อบัญชีธนาคาร', p => p.accName], ['หมายเลขบัญชีธนาคาร', p => p.accNo],
+  ['แหล่งข้อมูล', p => p.source], ['วันที่สร้างบิล', p => p.createdDate, 'date'], ['เครดิตเทอม(วัน)', p => num(p.creditDays), 'int'],
+  ['วันที่ต้องชำระ', p => p.dueDate, 'date'], ['สถานะการชำระ', payStatus, 'badge'], ['จำนวนรายการ', p => (p.jobIds||[]).length, 'int'],
+  ['ยอดที่ควรจ่าย', p => calcPay(p).base, 'money'], ['หัก Fast Payment %', p => num(p.fastPct), 'pct'], ['ยอดหัก Fast Payment', p => calcPay(p).fastAmt, 'money'],
+  ...DED_KEYS.map(([k,l]) => [l, p => num(calcPay(p).ded[k]), 'money']),
+  ['ยอดหักรวม', p => calcPay(p).dedTotal, 'money'], ['ยอดรวมที่ควรจ่าย', p => calcPay(p).net, 'money'], ['หัก ณ ที่จ่าย 1%', p => calcPay(p).wht, 'money'],
+  ['ราคาที่ควรจ่าย', p => calcPay(p).final, 'money'], ['รายการ', p => (p.jobIds||[]).length, 'items'],
+  ['ราคาที่จ่ายจริง', p => p.paid ? num(p.paid.actual) : '', 'money'], ['วันที่ชำระจริง', p => p.paid ? p.paid.date : '', 'date'],
+  ['วิธีชำระ', p => p.paid ? p.paid.method : ''], ['ธนาคารที่ชำระ', p => p.paid ? p.paid.bank : '']
+];
+function payItems(p, keepOpen){
+  p = payBy(p.payNo) || p;
+  const c = calcPay(p), locked = !!p.paid || !CAN_WRITE;
+  const m = openModal({title:'รายการในบิล ' + p.payNo, size:'wide', body: `<p class="hint" style="margin-top:0">รายการชำระนี้ประกอบด้วยหมายเลขใบงาน ${c.count} รายการ${p.paid ? ' · ชำระแล้ว แก้ไข/ลบไม่ได้' : ''}</p>
+    <div class="mini" style="max-height:none"><table><thead><tr><th>#</th><th>หมายเลขใบงาน</th><th>วันที่เสร็จสิ้น</th><th>ประเภทใบงาน</th><th>ทะเบียนรถ</th><th class="num">ค่าขนส่ง</th><th class="num">ค่าอื่นๆ</th><th class="num">% หัก</th><th class="num">ยอดที่ควรจ่าย</th><th>ดำเนินการ</th></tr></thead><tbody>
+    ${c.jobs.map((w,i) => `<tr><td>${i+1}</td><td>${esc(w.jobNo)}</td><td>${fdate(w.doneDate)}</td><td>${esc(w.type)}</td><td>${esc(w.plate)}</td><td class="num">${money(w.freight)}</td><td class="num">${money(w.other)}</td><td class="num">${fmtCell(num(w.deductPct),'pct')}</td><td class="num">${money(woPayable(w))}</td>
+      <td class="act" style="position:static;box-shadow:none"><button class="btn sm blue" data-ie="${esc(w._id)}" ${locked?'disabled':''}>แก้ไข</button> <button class="btn sm red" data-id-del="${esc(w._id)}" ${locked?'disabled':''}>ลบ</button></td></tr>`).join('')}
+    </tbody><tfoot><tr><th colspan="8">รวม</th><th class="num">${money(c.base)}</th><th></th></tr></tfoot></table></div>`, buttons:[{label:'ปิด'}]});
+  const reopen = () => { m.close(); payItems(p); };
+  m.addEventListener('click', async e => {
+    const eb = e.target.closest('[data-ie]'), db = e.target.closest('[data-id-del]');
+    if (eb) {
+      const w = S.workorders.find(x => x._id === eb.dataset.ie); if (!w) return;
+      const fields = [{k:'jobNo', label:'หมายเลขใบงาน', ro:1}, {k:'freight', label:'ค่าขนส่ง (บาท)', type:'number', req:1}, {k:'other', label:'ค่าอื่นๆ (บาท)', type:'number'},
+        {k:'_total', label:'ยอดเงินรวม', type:'calc'}, {k:'deductPct', label:'เปอร์เซ็นต์ที่หัก (%)', type:'number'}, {k:'_payable', label:'ยอดที่ควรจ่าย', type:'calc'}];
+      openModal({title:'แก้ไขยอด ' + w.jobNo, body: formHTML(fields, w) + '<p class="hint" style="margin-top:10px">บันทึกแล้วจะอัปเดตใบงานในเมนู "รายการใบงาน" และยอดในรายการชำระนี้ทันที</p>', onMount: wireWoCalc,
+        buttons:[{label:'ยกเลิก'}, {label:'บันทึก', cls:'pri', onClick: async em => {
+          const v = readForm(em); const fr = parseNum(v.freight, NaN), ot = parseNum(v.other, 0), pc = parseNum(v.deductPct, 0);
+          if (!isFinite(fr) || fr < 0 || !isFinite(ot) || ot < 0) { showErr(em, 'จำนวนเงินไม่ถูกต้อง'); return false; }
+          if (!isFinite(pc) || pc < 0 || pc > 100) { showErr(em, 'เปอร์เซ็นต์ที่หักต้องอยู่ระหว่าง 0–100'); return false; }
+          const fp = payBy(p.payNo); if (!fp || fp.paid) { showErr(em, 'รายการชำระนี้ชำระแล้ว แก้ไขไม่ได้'); return false; }
+          const fw = S.workorders.find(x => x._id === w._id) || w;
+          await put('workorders', w._id, {...fw, freight: round2(fr), other: round2(ot), deductPct: pc});
+          toast('แก้ไขยอดใบงาน ' + w.jobNo + ' แล้ว'); setTimeout(reopen);
+        }}]});
+    }
+    if (db) {
+      const w = S.workorders.find(x => x._id === db.dataset.idDel); if (!w) return;
+      const fp = payBy(p.payNo); const last = (fp.jobIds||[]).length <= 1;
+      const ok = await confirmBox('ลบใบงานออกจากรายการชำระ', `<p>นำใบงาน <b>${esc(w.jobNo)}</b> ออกจากรายการชำระ <b>${esc(p.payNo)}</b> ?</p><p class="hint">หมายเลขทำจ่ายในใบงานนี้จะถูกลบออก และใบงานกลับไปเป็นสถานะ "ยังไม่สร้าง" (ตัวใบงานไม่ถูกลบ)${last ? '<br><b>นี่คือใบงานสุดท้ายในบิล</b> — บิลจะไม่มีใบงานเหลือ' : ''}</p>`, 'ลบ');
+      if (!ok) return;
+      try {
+        const fresh = payBy(p.payNo); if (!fresh || fresh.paid) throw new Error('รายการชำระนี้ชำระแล้ว ลบไม่ได้');
+        await put('payments', fresh._id, {...fresh, jobIds: (fresh.jobIds||[]).filter(id => id !== w._id)});
+        const fw = S.workorders.find(x => x._id === w._id) || w;
+        await put('workorders', w._id, {...fw, payNo: ''});
+        toast('นำใบงาน ' + w.jobNo + ' ออกจาก ' + p.payNo + ' แล้ว'); reopen();
+      } catch(err){ toast(err.code ? writeErr(err) : (err.message || 'ลบไม่สำเร็จ'), 'err'); }
+    }
+  });
+}
+function sumBox(c){
+  return `<div class="sumbox">
+    <div class="r"><span>ยอดที่ควรจ่าย (รวมใบงาน)</span><span>${money(c.base)}</span></div>
+    <div class="r"><span>หัก Fast Payment ${c.fastPct}%</span><span>− ${money(c.fastAmt)}</span></div>
+    ${DED_KEYS.map(([k,l]) => num(c.ded[k]) ? `<div class="r"><span>${l}</span><span>− ${money(c.ded[k])}</span></div>` : '').join('')}
+    <div class="r"><span>ยอดหักรวม</span><span>${money(c.dedTotal)}</span></div>
+    <div class="r tot"><span>ยอดรวมที่ควรจ่าย</span><span>${money(c.net)}</span></div>
+    <div class="r"><span>หัก ณ ที่จ่าย 1%</span><span>− ${money(c.wht)}</span></div>
+    <div class="r tot"><span>ราคาที่ควรจ่าย</span><span>${money(c.final)}</span></div>${c.owe ? '<div class="r" style="color:var(--bad);font-size:12.5px"><span>หมายเหตุ: ยอดหักรวมมากกว่ายอดที่ควรจ่าย (ฟลีทต้องชำระคืน)</span></div>' : ''}</div>`;
+}
+function payView(p){
+  const c = calcPay(p), st = payStatus(p);
+  const tbl = (head, rows) => rows.length ? `<div class="mini"><table><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : '<p class="hint">ไม่มี</p>';
+  openModal({title:'ตรวจสอบรายการชำระ ' + p.payNo, size:'wide', body: `
+    <div class="sec-title">ข้อมูลฟลีทและบัญชี</div>
+    ${dlHTML([['ฟลีท', esc(p.fleetCode + ' · ' + p.fleetName)], ['ธนาคาร', esc(p.bankName||'-')], ['ชื่อบัญชี', esc(p.accName||'-')], ['เลขที่บัญชี', esc(p.accNo||'-')],
+      ['แหล่งข้อมูล', esc(p.source)], ['สถานะการชำระ', badge(st)], ['วันที่สร้างบิล', fdate(p.createdDate)], ['เครดิตเทอม', num(p.creditDays) + ' วัน'], ['วันที่ต้องชำระ', fdate(p.dueDate)]])}
+    <div class="sec-title">สรุปยอด</div>${sumBox(c)}
+    ${p.paid ? `<div class="sec-title">ข้อมูลการชำระ</div>${dlHTML([['ราคาที่ต้องจ่าย', esc(p.paid.basis) + ' · ' + money(p.paid.due)], ['ราคาที่จ่ายจริง', '<b>' + money(p.paid.actual) + '</b>'], ['วันที่ชำระจริง', fdate(p.paid.date)],
+      ['วิธีชำระ', esc(p.paid.method)], ['ธนาคารที่ชำระ', esc(p.paid.bank||'-')], ['ไฟล์แนบ', p.paid.attachId ? `<a href="/_blob/${esc(p.paid.attachId)}" target="_blank" rel="noopener">${esc(p.paid.attachName||'ไฟล์แนบ')}</a>` : esc(p.paid.attachName || '-')],
+      ['หมายเหตุ', esc(p.paid.remark||'-')]])}` : ''}
+    <div class="sec-title">ใบงานในบิล (${c.count})</div>
+    ${tbl(WO_COLS.slice(0,13).map(x => x[0]), c.jobs.map(w => `<tr>${WO_COLS.slice(0,13).map(([l,g,t]) => `<td class="${t==='money'||t==='pct'?'num':''}">${fmtCell(g(w), t)}</td>`).join('')}</tr>`))}
+    <div class="sec-title">ค่าปรับที่หัก (${c.fines.length})</div>
+    ${tbl(['วันที่','หมายเลขใบงาน','ประเภท','หมายเหตุ','จำนวนเงิน'], c.fines.map(f => `<tr><td>${fdate(f.date)}</td><td>${esc(f.jobNo)}</td><td>${esc(f.type)}</td><td>${esc(f.remark)}</td><td class="num">${money(f.amount)}</td></tr>`))}
+    <div class="sec-title">เบิกล่วงหน้าที่หักคืน (${c.advs.length})</div>
+    ${tbl(['เลขที่เบิก','วันที่ขอเบิก','เหตุผล','จำนวนเงิน'], c.advs.map(a => `<tr><td>${esc(a.advNo)}</td><td>${fdate(a.reqDate)}</td><td>${esc(a.reason)}</td><td class="num">${money(a.amount)}</td></tr>`))}`,
+    buttons:[{label:'ดาวน์โหลด Excel', onClick: () => { payExcel(p); return false; }}, {label:'ปิด', cls:'pri'}]});
+}
+function payEdit(p){
+  if (!guardWrite()) return;
+  if (p.paid) return toast('รายการนี้ชำระแล้ว แก้ไขค่าใช้จ่ายไม่ได้', 'err');
+  const c0 = calcPay(p);
+  const fields = [
+    {k:'creditDays', label:'เครดิตเทอม (วัน)', type:'number'}, {k:'_due', label:'วันที่ต้องชำระ', type:'calc'}, {k:'fastPct', label:'หัก Fast Payment (%)', type:'number'},
+    ...DED_KEYS.map(([k,l]) => (k === 'fine' || k === 'advance') ? {k:'_'+k, label:l, type:'calc'} : {k, label:l + ' (บาท)', type:'number'}),
+    {k:'note', label:'หมายเหตุค่าใช้จ่าย', type:'textarea', full:1}
+  ];
+  const rec = {fastPct: p.fastPct, creditDays: p.creditDays, note: p.note || ''}; DED_KEYS.forEach(([k]) => rec[k] = (p.ded||{})[k] ?? 0);
+  openModal({title:'แก้ไขค่าใช้จ่าย ' + p.payNo, size:'wide', body: `<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:20px" class="pe-grid">
+      <div>${formHTML(fields, rec)}<p class="hint" style="margin-top:10px">ค่าปรับและค่าเบิกล่วงหน้าดึงมาจากเมนู "ค่าปรับ" และ "เบิกล่วงหน้า" อัตโนมัติ</p></div><div data-a="sum"></div></div>`,
+    onMount: m => {
+      const u = () => { const v = readForm(m); const ded = {}; DED_KEYS.forEach(([k]) => ded[k] = num(v[k])); const c = calcPay(p, {...p, fastPct: num(v.fastPct), ded});
+        $('[data-calc=_fine]', m).textContent = money(c.ded.fine); $('[data-calc=_advance]', m).textContent = money(c.ded.advance);
+        $('[data-calc=_due]', m).textContent = fdate(addDays(p.createdDate, num(v.creditDays))); $('[data-a=sum]', m).innerHTML = sumBox(c); };
+      m.addEventListener('input', u); u();
+    },
+    buttons:[{label:'ยกเลิก'}, {label:'บันทึก', cls:'pri', onClick: async m => {
+      const v = readForm(m); const ded = {}; let bad = false;
+      DED_KEYS.forEach(([k]) => { if (k === 'fine' || k === 'advance') return; const n = parseNum(v[k], 0); if (!isFinite(n) || n < 0) bad = true; ded[k] = round2(n); });
+      const fp = parseNum(v.fastPct, 0), cd = parseNum(v.creditDays, 0);
+      if (bad || !isFinite(fp) || fp < 0 || fp > 100 || !isFinite(cd) || cd < 0) { showErr(m, 'ตรวจสอบตัวเลขอีกครั้ง (ห้ามติดลบ, Fast Payment 0–100%)'); return false; }
+      const fresh = payBy(p.payNo); if (!fresh || fresh.paid) { showErr(m, 'รายการนี้ถูกชำระไปแล้ว'); return false; }
+      await put('payments', p._id, {...fresh, fastPct: fp, creditDays: cd, dueDate: addDays(fresh.createdDate, cd), ded, note: v.note});
+      toast('บันทึกค่าใช้จ่ายแล้ว');
+    }}]});
+}
+function payExcel(p){
+  const c = calcPay(p);
+  const head = WO_COLS.map(x => x[0]);
+  const rows = c.jobs.map(w => WO_COLS.map(([l,g,t]) => { const v = g(w); return t === 'date' ? fdate(v) : v; }));
+  const sum = [['หมายเลขทำจ่าย', p.payNo], ['ฟลีท', p.fleetCode + ' ' + p.fleetName], ['ธนาคาร', p.bankName], ['ชื่อบัญชี', p.accName], ['เลขที่บัญชี', p.accNo],
+    ['วันที่สร้างบิล', fdate(p.createdDate)], ['วันที่ต้องชำระ', fdate(p.dueDate)], ['สถานะ', payStatus(p)], ['จำนวนรายการ', c.count], ['ยอดที่ควรจ่าย', c.base],
+    ['หัก Fast Payment ' + c.fastPct + '%', c.fastAmt], ...DED_KEYS.map(([k,l]) => [l, num(c.ded[k])]), ['ยอดหักรวม', c.dedTotal], ['ยอดรวมที่ควรจ่าย', c.net], ['หัก ณ ที่จ่าย 1%', c.wht], ['ราคาที่ควรจ่าย', c.final]];
+  const sheets = [{name:'รายการใบงาน', aoa:[head, ...rows]}, {name:'สรุป', aoa:[['รายการ','ค่า'], ...sum]}];
+  if (c.fines.length) sheets.push({name:'ค่าปรับ', aoa:[FINE_COLS.map(x=>x[0]), ...c.fines.map(f => FINE_COLS.map(([l,g,t]) => t==='date'?fdate(g(f)):g(f)))]});
+  if (c.advs.length) sheets.push({name:'เบิกล่วงหน้า', aoa:[ADV_COLS.map(x=>x[0]), ...c.advs.map(a => ADV_COLS.map(([l,g,t]) => t==='date'?fdate(g(a)):g(a)))]});
+  exportXlsx(p.payNo + '.xlsx', sheets);
+}
+const BANKS = ['กสิกรไทย','ไทยพาณิชย์','กรุงเทพ','กรุงไทย','กรุงศรีอยุธยา','ทหารไทยธนชาต','ออมสิน','ยูโอบี','ซีไอเอ็มบี ไทย','เกียรตินาคินภัทร','ธ.ก.ส.'];
+const PAY_BANKS = [['KBANK','กสิกรไทย'],['SCB','ไทยพาณิชย์'],['BBL','กรุงเทพ'],['KTB','กรุงไทย'],['BAY','กรุงศรีอยุธยา'],['TTB','ทหารไทยธนชาต'],['GSB','ออมสิน'],['UOB','ยูโอบี'],['CIMBT','ซีไอเอ็มบี ไทย'],['KKP','เกียรตินาคินภัทร'],['BAAC','ธ.ก.ส.']];
+function payPay(p){
+  if (!guardWrite()) return;
+  if (p.paid) return toast('รายการนี้ชำระแล้ว', 'err');
+  const c = calcPay(p);
+  const optB = 'ก่อนหัก ณ ที่จ่าย', optA = 'หลังหัก ณ ที่จ่าย';
+  const row = (label, html, req, forId) => `<div class="rl">${forId ? `<label for="${forId}">` : '<span>'}${req ? '<span class="req">*</span>' : ''}${label}${forId ? '</label>' : '</span>'}</div><div class="rv">${html}</div>`;
+  const body = `<div class="rowform">
+    ${row('ฟลีท', `<div class="rt">${esc(p.fleetCode)}(${esc(p.fleetName)})</div>`)}
+    ${row('เลขที่รายการ', `<div class="rt">${esc(p.payNo)}</div>`)}
+    ${row('ราคาที่ต้องจ่าย', `<div class="rt mono">${money(c.net)}</div>`)}
+    ${row('ราคาที่จ่ายจริง', `<div class="radios" role="radiogroup" aria-label="ราคาที่จ่ายจริง">
+        <label class="rdo"><input type="radio" name="basis" value="${optB}" checked> <span>ก่อน ณ ที่จ่าย ${money(c.net)}</span></label>
+        <label class="rdo"><input type="radio" name="basis" value="${optA}"> <span>หลัง ณ ที่จ่าย ${money(c.final)}</span></label></div>
+      <input id="f_actual" type="number" step="0.01" min="0" inputmode="decimal" data-k="actual" value="${c.net}" aria-label="จำนวนเงินที่จ่ายจริง"><div class="hint" data-a="diff"></div>`, 1)}
+    ${row('ไฟล์แนบ', `<input type="file" id="f_attach" data-file="attach" accept="image/png,image/jpeg,image/webp,application/pdf" hidden><button type="button" class="btn attach-btn" data-a="pick" aria-label="แนบไฟล์">+</button> <span class="hint" data-a="fname"></span>${ASSETS ? '' : '<div class="hint">บันทึกเฉพาะชื่อไฟล์ (ผู้ใช้ที่มีสิทธิ์แก้ไขหน้านี้จึงจะเก็บไฟล์ได้)</div>'}`)}
+    ${row('หมายเหตุ', `<textarea id="f_remark" data-k="remark"></textarea>`, 0, 'f_remark')}
+    ${row('วันที่ชำระจริง', dpHTML({id:'f_date', attr:'data-k="date"', v1: today(), label:'วันที่ชำระจริง'}), 1, 'f_date_b')}
+    ${row('วิธีชำระ', `<select id="f_method" data-k="method">${mlist('paymethod').map(x => `<option>${esc(x.name)}</option>`).join('')}</select><div class="hint">ตัวเลือกมาจาก การตั้งค่า › ข้อมูลหลัก › วิธีชำระ</div>`, 1, 'f_method')}
+    ${row('ธนาคารที่ชำระ', `<select id="f_bank" data-k="bank"><option value="">— เลือก —</option>${mlist('paybank').map(x => { const t = (x.code ? x.code + '_' : '') + (x.name || '') + (x.accNo ? ' - ' + x.accNo : ''); return `<option value="${esc(t)}">${esc(t)}</option>`; }).join('')}</select><div class="hint">ตัวเลือกมาจาก การตั้งค่า › ข้อมูลหลัก › บัญชีธนาคารที่ชำระ</div>`, 1, 'f_bank')}
+  </div>`;
+  openModal({title:'ชำระ', size:'pay', body,
+    onMount: m => {
+      const amt = () => ($('input[name=basis]:checked', m) || {}).value === optA ? c.final : c.net;
+      const diff = () => { const d = round2(num($('#f_actual', m).value) - amt()); $('[data-a=diff]', m).textContent = d ? `ส่วนต่างจากราคาที่เลือก ${d > 0 ? '+' : ''}${money(d)} บาท` : ''; };
+      $$('input[name=basis]', m).forEach(r => r.addEventListener('change', () => { $('#f_actual', m).value = amt(); diff(); }));
+      $('#f_actual', m).addEventListener('input', diff);
+      const fi = $('#f_attach', m);
+      $('[data-a=pick]', m).onclick = () => fi.click();
+      fi.onchange = () => { $('[data-a=fname]', m).textContent = fi.files[0] ? fi.files[0].name : ''; };
+    },
+    buttons:[{label:'ยกเลิก'}, {label:'ยืนยันการชำระ', cls:'pri', onClick: async m => {
+      const v = readForm(m); v.basis = ($('input[name=basis]:checked', m) || {}).value || optB;
+      if (!v.date) { showErr(m, 'กรุณาเลือกวันที่ชำระจริง'); return false; }
+      if (!v.bank) { showErr(m, 'กรุณาเลือกธนาคารที่ชำระ'); return false; }
+      const actual = parseNum(v.actual, NaN); if (!isFinite(actual) || actual < 0) { showErr(m, 'ราคาที่จ่ายจริงไม่ถูกต้อง'); return false; }
+      const fresh = payBy(p.payNo); if (!fresh || fresh.paid) { showErr(m, 'รายการนี้ถูกชำระไปแล้ว'); return false; }
+      const fc = calcPay(fresh);
+      const file = $('#f_attach', m).files[0]; let attachId = '', attachName = file ? file.name : '';
+      if (file && ASSETS) {
+        try { const t = file.type || (/\.pdf$/i.test(file.name) ? 'application/pdf' : ''); const r = await ASSETS.upload(file, t ? {type:t} : undefined); attachId = r.id; }
+        catch(err){ showErr(m, 'อัปโหลดไฟล์แนบไม่สำเร็จ (' + (err.code || 'error') + ') — ลองใหม่ หรือเอาไฟล์ออกแล้วบันทึก'); return false; }
+      }
+      const due = v.basis === optB ? fc.net : fc.final;
+      await put('payments', p._id, {...fresh, paid: {basis: v.basis, due, actual: round2(actual), date: v.date, method: v.method, bank: v.bank, remark: v.remark, attachId, attachName, at: new Date().toISOString(),
+        snapshot: {base: fc.base, fastAmt: fc.fastAmt, ded: fc.ded, dedTotal: fc.dedTotal, net: fc.net, wht: fc.wht, final: fc.final}}});
+      toast('บันทึกการชำระ ' + p.payNo + ' แล้ว');
+    }}]});
+}
+
+/* ===================== FLEETS ===================== */
+const FLEET_SECTIONS = () => [
+  ['ข้อมูลพื้นฐาน', [{k:'code', label:'รหัสฟลีท', req:1}, {k:'name', label:'ชื่อฟลีท', req:1}, {k:'fleetType', label:'ประเภทฟลีท', list:'dl-fleettype'}, {k:'phone', label:'โทรศัพท์', type:'tel'},
+    {k:'email', label:'อีเมล', type:'email'}]],
+  ['ข้อมูลภาษี', [{k:'taxType', label:'ประเภท', type:'select', options:['', 'นิติบุคคล', 'บุคคลธรรมดา']}, {k:'taxName', label:'ชื่อบริษัท/ชื่อ-นามสกุล'}, {k:'taxId', label:'เลขผู้เสียภาษี', hint:'13 หลัก'},
+    {k:'taxAddr', label:'ที่อยู่ผู้เสียภาษี', type:'textarea', full:1}, {k:'billAddr', label:'ที่อยู่วางบิล', type:'textarea', full:1}]],
+  ['บัญชีรับเงิน', [{k:'bankName', label:'ชื่อธนาคาร', list:'dl-bank'}, {k:'accName', label:'ชื่อบัญชีธนาคาร'}, {k:'accNo', label:'หมายเลขบัญชีธนาคาร'}]]
+];
+const FLEET_COLS = [
+  ['รหัสฟลีท', f => f.code], ['ชื่อฟลีท', f => f.name], ['ประเภทฟลีท', f => f.fleetType], ['โทรศัพท์', f => f.phone], ['อีเมล', f => f.email], ['ประเภท', f => f.taxType],
+  ['ชื่อบริษัท/ชื่อ-นามสกุล', f => f.taxName], ['เลขผู้เสียภาษี', f => f.taxId], ['ที่อยู่ผู้เสียภาษี', f => f.taxAddr], ['ที่อยู่วางบิล', f => f.billAddr],
+  ['ชื่อธนาคาร', f => f.bankName], ['ชื่อบัญชีธนาคาร', f => f.accName], ['หมายเลขบัญชีธนาคาร', f => f.accNo]
+];
+function fleetView(f){
+  openModal({title:'ข้อมูลฟลีท ' + f.code, size:'wide', body: FLEET_SECTIONS().map(([t, fs]) => `<div class="sec-title">${t}</div>` + dlHTML(fs.map(x => [x.label, esc(f[x.k] ?? '') || '-']))).join(''), buttons:[{label:'ปิด'}]});
+}
+function fleetForm(rec){
+  if (!guardWrite()) return;
+  const isEdit = !!rec;
+  const secs = FLEET_SECTIONS().map(([t, fs]) => [t, fs.map(x => isEdit && x.k === 'code' ? {...x, ro:1} : x)]);
+  const all = secs.flatMap(s => s[1]);
+  openModal({title: isEdit ? 'แก้ไขข้อมูลฟลีท ' + rec.code : 'เพิ่มข้อมูลฟลีท', size:'wide',
+    body: secs.map(([t, fs]) => `<div class="sec-title">${t}</div>${formHTML(fs, rec || {})}`).join('') + '<p class="hint" style="margin-top:12px">ชื่อธนาคาร ชื่อบัญชี และเลขบัญชี จะใช้กับรายการชำระที่สร้างใหม่หลังจากนี้ (รายการชำระที่สร้างไปแล้วใช้ข้อมูล ณ วันที่สร้าง)</p>',
+    buttons:[{label:'ยกเลิก'}, {label:'บันทึก', cls:'pri', onClick: async m => {
+      const v = readForm(m); const e = checkReq(all, v); if (e) { showErr(m, e); return false; }
+      if (!okId(v.code)) { showErr(m, 'รหัสฟลีทใช้ได้เฉพาะตัวอักษรภาษาอังกฤษ ตัวเลข และ - _ . : @ +'); return false; }
+      if (!isEdit && S.fleets.some(f => lc(f.code) === lc(v.code))) { showErr(m, 'รหัสฟลีทนี้มีอยู่แล้ว'); return false; }
+      if (v.taxId && !/^\d{13}$/.test(v.taxId.replace(/[-\s]/g,''))) { showErr(m, 'เลขผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก'); return false; }
+      if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) { showErr(m, 'รูปแบบอีเมลไม่ถูกต้อง'); return false; }
+      const base = isEdit ? {...rec} : {}; delete base._id;
+      await put('fleets', isEdit ? rec._id : v.code, {...base, ...v, code: isEdit ? rec.code : v.code});
+      toast(isEdit ? 'บันทึกข้อมูลฟลีทแล้ว' : 'เพิ่มฟลีท ' + v.code + ' แล้ว');
+    }}]});
+}
+
+/* ===================== MASTER DATA (การตั้งค่า > ข้อมูลหลัก) ===================== */
+const MTYPES = [['wotype','ประเภทใบงาน'],['finetype','ประเภทค่าปรับ'],['advreason','เหตุผลการเบิก'],['fleettype','ประเภทฟลีท'],['paymethod','วิธีชำระ'],['paybank','บัญชีธนาคารที่ชำระ']];
+const mLabel = k => (MTYPES.find(t => t[0] === k) || [k, k])[1];
+const mKey = l => (MTYPES.find(t => t[1] === l) || [l])[0];
+const MDEF = {
+  wotype: ['Linehaul','Shuttle','Ad-hoc'], finetype: ['ส่งล่าช้า','สินค้าเสียหาย','สินค้าสูญหาย','ไม่ปฏิบัติตามกฎ'],
+  advreason: ['ค่าน้ำมัน','ค่าซ่อมรถ','ค่าทางด่วน','ค่าใช้จ่ายฉุกเฉิน'], fleettype: ['ฟลีทภายนอก (Outsource)','ฟลีทภายใน'],
+  paymethod: ['โอนเงิน','เช็ค','เงินสด'], paybank: [['KBANK','กสิกรไทย'],['SCB','ไทยพาณิชย์'],['BBL','กรุงเทพ'],['KTB','กรุงไทย']]
+};
+function mlist(type){
+  const own = S.masters.filter(m => m.type === type);
+  if (own.length) return own.filter(m => (m.active || 'ใช้งาน') === 'ใช้งาน').sort((a,b) => (num(a.order) - num(b.order)) || String(a.code||a.name).localeCompare(b.code||b.name));
+  return (MDEF[type] || []).map(v => Array.isArray(v) ? {code: v[0], name: v[1]} : {code: '', name: v});
+}
+const mnames = type => uniq(mlist(type).map(m => m.name));
+const M_COLS_BANK = [['ประเภทข้อมูล', r => mLabel(r.type)], ['ชื่อย่อธนาคาร', r => r.code], ['ชื่อธนาคาร', r => r.name], ['เลขบัญชีธนาคาร', r => r.accNo], ['รายละเอียด', r => r.note], ['ลำดับ', r => r.order ?? '', 'int'], ['สถานะ', r => r.active || 'ใช้งาน', 'badge']];
+const M_COLS = [['ประเภทข้อมูล', r => mLabel(r.type)], ['ชื่อ / ค่า', r => r.name], ['รายละเอียด', r => r.note], ['ลำดับ', r => r.order ?? '', 'int'], ['สถานะ', r => r.active || 'ใช้งาน', 'badge']];
+function masterForm(rec){
+  if (!guardWrite()) return;
+  const isEdit = !!rec;
+  const curType = isEdit ? mLabel(rec.type) : (TAB.masters && TAB.masters !== 'ทั้งหมด' ? TAB.masters : MTYPES[0][1]);
+  const fields = [
+    {k:'type', label:'ประเภทข้อมูล', type:'select', options: MTYPES.map(t => t[1]), req:1, ro: isEdit},
+    {k:'code', label:'ชื่อย่อธนาคาร', hint:'เช่น KBANK'}, {k:'name', label:'ชื่อ / ค่า', req:1}, {k:'accNo', label:'เลขบัญชีธนาคาร'},
+    {k:'order', label:'ลำดับการแสดง', type:'number'}, {k:'active', label:'สถานะ', type:'select', options:['ใช้งาน','ปิดใช้งาน']},
+    {k:'note', label:'รายละเอียด', type:'textarea', full:1}
+  ];
+  openModal({title: isEdit ? 'แก้ไขข้อมูลหลัก' : 'เพิ่มข้อมูลหลัก', body: formHTML(fields, isEdit ? {...rec, type: mLabel(rec.type), active: rec.active || 'ใช้งาน'} : {type: curType, active:'ใช้งาน'}),
+    onMount: m => { const sel = $('[data-k=type]', m), cw = $('[data-k=code]', m).closest('div'), nl = $('label[for=f_name]', m);
+      const aw = $('[data-k=accNo]', m).closest('div'); const u = () => { const bank = mKey(sel.value) === 'paybank'; cw.hidden = !bank; aw.hidden = !bank; nl.lastChild.textContent = bank ? 'ชื่อธนาคาร' : 'ชื่อ / ค่า'; }; sel.addEventListener('change', u); u(); },
+    buttons:[{label:'ยกเลิก'}, {label:'บันทึก', cls:'pri', onClick: async m => {
+      const v = readForm(m); if (isEdit) v.type = mLabel(rec.type); if (mKey(v.type) !== 'paybank') { v.code = ''; v.accNo = ''; }
+      const e = checkReq(fields, v); if (e) { showErr(m, e); return false; }
+      const type = mKey(v.type);
+      if (S.masters.some(x => x.type === type && lc(x.name) === lc(v.name) && lc(x.code||'') === lc(v.code||'') && lc(x.accNo||'') === lc(v.accNo||'') && (!isEdit || x._id !== rec._id))) { showErr(m, 'มีข้อมูลนี้อยู่แล้ว'); return false; }
+      if (!isEdit && !S.masters.some(x => x.type === type) && (MDEF[type] || []).length) {
+        // first custom entry of this type: copy defaults so they are not lost
+        await runAll((MDEF[type]).map((d, i) => () => put('masters', rid('M'), {type, code: Array.isArray(d) ? d[0] : '', name: Array.isArray(d) ? d[1] : d, note:'', order: i+1, active:'ใช้งาน'})));
+      }
+      await put('masters', isEdit ? rec._id : rid('M'), {type, code: v.code, name: v.name, accNo: v.accNo || '', note: v.note, order: v.order === '' ? '' : num(v.order), active: v.active || 'ใช้งาน'});
+      toast(isEdit ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่มข้อมูลแล้ว');
+    }}]});
+}
+async function masterDelete(r){
+  if (!guardWrite()) return;
+  const ok = await confirmBox('ลบข้อมูลหลัก', `<p>ลบ <b>${esc(r.code ? r.code + ' — ' : '')}${esc(r.name)}</b> ออกจาก "${esc(mLabel(r.type))}" ?</p><p class="hint">ข้อมูลที่บันทึกไปแล้วในใบงาน/รายการชำระจะไม่ถูกเปลี่ยน ถ้าต้องการแค่ซ่อนจากตัวเลือก ใช้ "แก้ไข" แล้วตั้งสถานะเป็น ปิดใช้งาน</p>`, 'ลบ');
+  if (!ok) return;
+  try { await del('masters', r._id); toast('ลบแล้ว'); } catch(e){ toast(writeErr(e), 'err'); }
+}
+
+/* ===================== page configs ===================== */
+const PAGES = {
+  workorders: {
+    title:'รายการใบงาน', col:'workorders', rows: () => S.workorders.slice().sort((a,b) => String(b.doneDate).localeCompare(a.doneDate) || String(b.jobNo).localeCompare(a.jobNo)),
+    filters:[
+      {k:'jobNo', label:'หมายเลขใบงาน', multi:'ws', get:w=>w.jobNo}, {k:'plate', label:'ทะเบียนรถ', multi:'sep', get:w=>w.plate},
+      {k:'type', label:'ประเภทใบงาน', type:'select', opts:()=>uniq(S.workorders.map(w=>w.type)), get:w=>w.type},
+      {k:'fleetCode', label:'รหัสฟลีท', multi:'ws', combo:'code', get:w=>w.fleetCode}, {k:'fleetName', label:'ชื่อฟลีท', combo:'name', get:w=>w.fleetName},
+      {k:'payNo', label:'หมายเลขทำจ่าย', multi:'ws', get:w=>w.payNo}, {k:'doneDate', label:'วันที่ส่งสำเร็จ', type:'range', get:w=>w.doneDate}
+    ],
+    buttons:[['เพิ่มรายการ', ()=>woForm(), 'plus'], ['อัปโหลดรายการ', woUpload, 'up'], ['ดาวน์โหลด Excel', ()=>listExcel('workorders'), 'down'], ['สร้างรายการชำระ', woCreatePayment, 'bill', 'green']],
+    cols: WO_COLS, selectable: w => !w.payNo, freeze: 1,
+    actions: w => `<button class="btn sm blue" data-act="view" data-id="${esc(w._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(w._id)}" ${isLockedPaid(w)?'disabled title="ชำระแล้ว แก้ไขไม่ได้"':''}>แก้ไข</button>`,
+    onAct: (a, w) => a === 'view' ? woView(w) : woForm(w)
+  },
+  fines: {
+    title:'ค่าปรับ', col:'fines', rows: () => S.fines.slice().sort((a,b) => String(b.date).localeCompare(a.date)),
+    filters:[
+      {k:'jobNo', label:'หมายเลขใบงาน', multi:'ws', get:f=>f.jobNo}, {k:'fleetCode', label:'รหัสฟลีท', multi:'ws', combo:'code', get:f=>f.fleetCode}, {k:'fleetName', label:'ชื่อฟลีท', combo:'name', get:f=>f.fleetName},
+      {k:'payNo', label:'หมายเลขทำจ่าย', multi:'ws', get:f=>f.payNo}, {k:'date', label:'วันที่เกิดค่าปรับ', type:'range', get:f=>f.date}
+    ],
+    buttons:[['ดาวน์โหลด Excel', ()=>listExcel('fines'), 'down'], ['เพิ่มรายการ', ()=>fineForm(), 'plus'], ['อัปโหลดรายการ', fineUpload, 'up'], ['สร้างรายการชำระ', ()=>attachToPayment('fines'), 'bill', 'green']],
+    cols: FINE_COLS, selectable: f => !f.payNo, freeze: 1,
+    actions: f => `<button class="btn sm blue" data-act="view" data-id="${esc(f._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(f._id)}" ${isLockedPaid(f)?'disabled title="ชำระแล้ว แก้ไขไม่ได้"':''}>แก้ไข</button>`,
+    onAct: (a, f) => a === 'view' ? openModal({title:'ค่าปรับ ' + f.jobNo, body: dlHTML(FINE_COLS.map(([l,g,t]) => [l, fmtCell(g(f), t)])), buttons:[{label:'ปิด'}]}) : fineForm(f)
+  },
+  advances: {
+    title:'เบิกล่วงหน้า', col:'advances', rows: () => S.advances.slice().sort((a,b) => String(b.advNo).localeCompare(a.advNo)),
+    filters:[
+      {k:'advNo', label:'เลขที่เบิก', multi:'ws', get:a=>a.advNo}, {k:'fleetCode', label:'รหัสฟลีท', multi:'ws', combo:'code', get:a=>a.fleetCode}, {k:'fleetName', label:'ชื่อฟลีท', combo:'name', get:a=>a.fleetName},
+      {k:'ret', label:'สถานะหักคืน', type:'select', opts:()=>['ยังไม่หักคืน','รอหักคืนในบิล','หักคืนแล้ว'], get:advReturnStatus},
+      {k:'payNo', label:'หมายเลขทำจ่าย', multi:'ws', get:a=>a.payNo}, {k:'reqDate', label:'วันที่ขอเบิก', type:'range', get:a=>a.reqDate}
+    ],
+    buttons:[['ดาวน์โหลด Excel', ()=>listExcel('advances'), 'down'], ['เพิ่มรายการ', ()=>advForm(), 'plus'], ['อัปโหลดรายการ', advUpload, 'up'], ['สร้างรายการชำระ', ()=>attachToPayment('advances'), 'bill', 'green']],
+    cols: ADV_COLS, selectable: a => !a.payNo, freeze: 1,
+    actions: a => `<button class="btn sm blue" data-act="view" data-id="${esc(a._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(a._id)}" ${a.payNo?'disabled title="ผูกกับรายการชำระแล้ว"':''}>แก้ไข</button>`,
+    onAct: (x, a) => x === 'view' ? openModal({title:'เบิกล่วงหน้า ' + a.advNo, body: dlHTML(ADV_COLS.map(([l,g,t]) => [l, fmtCell(g(a), t)])), buttons:[{label:'ปิด'}]}) : x === 'edit' ? advForm(a) : advApprove(a, x === 'ok')
+  },
+  payments: {
+    title:'รายการชำระ', col:'payments', rows: () => S.payments.slice().sort((a,b) => String(b.payNo).localeCompare(a.payNo)),
+    filters:[
+      {k:'fleetName', label:'ชื่อฟลีท', combo:'name', get:p=>p.fleetName + ' ' + p.fleetCode}, {k:'st', label:'สถานะการชำระ', type:'select', opts:()=>['รอชำระ','เกินกำหนด','ชำระแล้ว'], get:payStatus},
+      {k:'payNo', label:'หมายเลขทำจ่าย', multi:'ws', get:p=>p.payNo}, {k:'dueDate', label:'วันที่ต้องชำระ', type:'range', get:p=>p.dueDate}
+    ],
+    buttons:[['ดาวน์โหลด', ()=>listExcel('payments'), 'down']],
+    cols: PAY_COLS, selectable: null, freeze: 2,
+    actions: p => `<button class="btn sm blue" data-act="view" data-id="${esc(p._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(p._id)}" ${p.paid?'disabled':''}>แก้ไขค่าใช้จ่าย</button><button class="btn sm blue" data-act="xls" data-id="${esc(p._id)}">ดาวน์โหลด Excel</button><button class="btn sm green" data-act="pay" data-id="${esc(p._id)}" ${p.paid?'disabled':''}>ชำระ</button>`,
+    onAct: (a, p) => ({view:payView, edit:payEdit, xls:payExcel, pay:payPay, items:payItems})[a](p)
+  },
+  fleets: {
+    title:'ข้อมูลฟลีท', group:'การจัดการฟลีท', col:'fleets', rows: () => S.fleets.slice().sort((a,b) => String(a.code).localeCompare(b.code)),
+    filters:[
+      {k:'fleetCode', label:'รหัสฟลีท', combo:'code', get:f=>f.code}, {k:'fleetName', label:'ชื่อฟลีท', combo:'name', get:f=>f.name}
+    ],
+    buttons:[['เพิ่มรายการ', ()=>fleetForm(), 'plus'], ['ดาวน์โหลด Excel', ()=>listExcel('fleets'), 'down']],
+    cols: FLEET_COLS, selectable: null, freeze: 2,
+    actions: f => `<button class="btn sm blue" data-act="view" data-id="${esc(f._id)}">ตรวจสอบ</button><button class="btn sm blue" data-act="edit" data-id="${esc(f._id)}">แก้ไข</button>`,
+    onAct: (a, f) => a === 'view' ? fleetView(f) : fleetForm(f)
+  },
+  masters: {
+    title:'ข้อมูลหลัก', group:'การตั้งค่า', col:'masters',
+    rows: () => S.masters.slice().sort((a,b) => (MTYPES.findIndex(t => t[0]===a.type) - MTYPES.findIndex(t => t[0]===b.type)) || (num(a.order) - num(b.order)) || String(a.name).localeCompare(b.name)),
+    tabs: () => MTYPES.map(t => t[1]), tabFn: r => mLabel(r.type),
+    filters:[{k:'q', label:'ชื่อ / รายละเอียด', get:r => [r.code, r.name, r.accNo, r.note].join(' ')}, {k:'active', label:'สถานะ', type:'select', opts:()=>['ใช้งาน','ปิดใช้งาน'], get:r => r.active || 'ใช้งาน'}],
+    buttons:[['เพิ่มรายการ', ()=>masterForm(), 'plus'], ['ดาวน์โหลด Excel', ()=>listExcel('masters'), 'down']],
+    get cols(){ return TAB.masters === 'บัญชีธนาคารที่ชำระ' ? M_COLS_BANK : M_COLS; }, selectable: null,
+    actions: r => `<button class="btn sm blue" data-act="edit" data-id="${esc(r._id)}">แก้ไข</button><button class="btn sm red" data-act="del" data-id="${esc(r._id)}">ลบ</button>`,
+    onAct: (a, r) => a === 'edit' ? masterForm(r) : masterDelete(r)
+  }
+};
+const uniq = a => [...new Set(a.filter(Boolean))].sort();
+
+function fmtCell(v, t){
+  if (t === 'money') return v === '' || v === null || v === undefined ? '-' : money(v);
+  if (t === 'pct') return (Number(v)||0).toLocaleString('th-TH', {maximumFractionDigits:2}) + '%';
+  if (t === 'int') return String(v ?? '');
+  if (t === 'date') return fdate(v);
+  if (t === 'badge') return badge(v);
+  return v === '' || v === null || v === undefined ? '-' : esc(v);
+}
+const splitQ = (q, mode) => String(q).split(mode === 'ws' ? /[\s,;]+/ : /\s*[,;\n\t]\s*/).map(s => lc(s.trim())).filter(Boolean);
+const TABS = ['ทั้งหมด','ยังไม่สร้าง','สร้างแล้ว'];
+const TAB = {workorders:'ทั้งหมด', fines:'ทั้งหมด', advances:'ทั้งหมด', masters:'ประเภทใบงาน'};
+const tabsOf = pg => pg.tabs ? pg.tabs() : TABS;
+const tabFnOf = pg => pg.tabFn || createStatus;
+function filtered(key, noTab){
+  const base = filteredBase(key);
+  if (noTab || !TAB[key] || TAB[key] === 'ทั้งหมด') return base;
+  const fn = tabFnOf(PAGES[key]);
+  return base.filter(r => fn(r) === TAB[key]);
+}
+function filteredBase(key){
+  const pg = PAGES[key], f = F[key];
+  return pg.rows().filter(r => pg.filters.every(fl => {
+    const val = String(fl.get(r) ?? '');
+    if (fl.type === 'range') { const a = f[fl.k+'From'], b = f[fl.k+'To']; if (a && (!val || val < a)) return false; if (b && (!val || val > b)) return false; return true; }
+    const q = f[fl.k];
+    if (fl.combo) { if (!Array.isArray(q) || !q.length) return true; return q.some(t => fl.combo === 'code' ? lc(val) === lc(t) : lc(val).includes(lc(t))); }
+    if (!q) return true;
+    if (fl.type === 'select') return val === q;
+    if (fl.multi) { const toks = splitQ(q, fl.multi); if (toks.length) return toks.some(t => lc(val).includes(t)); }
+    return lc(val).includes(lc(q));
+  }));
+}
+function listExcel(key){
+  const pg = PAGES[key], rows = filtered(key);
+  if (!rows.length) return toast('ไม่มีรายการให้ดาวน์โหลด', 'err');
+  const aoa = [pg.cols.map(c => c[0]), ...rows.map(r => pg.cols.map(([l,g,t]) => { const v = g(r); return t === 'date' ? (v ? fdate(v) : '') : (v ?? ''); }))];
+  exportXlsx(`${pg.title}_${today()}.xlsx`, [{name: pg.title, aoa}]);
+}
+
+/* ===================== render ===================== */
+let rTimer = 0, pendingRender = false;
+function scheduleRender(){ if (rTimer) return; rTimer = requestAnimationFrame(() => { rTimer = 0; const ae = document.activeElement; if (ae && ae.closest && ae.closest('#filters') && ae.matches('input[type=text],input:not([type])')) { pendingRender = true; return; } render(); }); }
+function renderLists(){
+  const opt = a => a.map(v => `<option value="${esc(v)}"></option>`).join('');
+  $('#lists').innerHTML = `<datalist id="dl-fleet">${S.fleets.map(f => `<option value="${esc(f.code)}">${esc(f.name)}</option>`).join('')}</datalist>
+    <datalist id="dl-wotype">${opt(mnames('wotype'))}</datalist>
+    <datalist id="dl-finetype">${opt(mnames('finetype'))}</datalist>
+    <datalist id="dl-advreason">${opt(mnames('advreason'))}</datalist>
+    <datalist id="dl-job">${opt(S.workorders.slice(-500).map(w=>w.jobNo))}</datalist>
+    <datalist id="dl-bank">${opt(BANKS)}</datalist>
+    <datalist id="dl-fleettype">${opt(mnames('fleettype'))}</datalist>`;
+}
+function render(){
+  pendingRender = false;
+  const key = ROUTE, pg = PAGES[key], d = D[key];
+  $('#pageTitle').textContent = pg.title; document.title = pg.title + ' · Shopee – ระบบทำจ่ายฟลีท';
+  $$('.nav-sub a').forEach(a => a.classList.toggle('active', a.dataset.r === key));
+  $$('.nav-group').forEach(b => b.classList.toggle('cur', !!$(`#${b.dataset.grp} a[data-r="${key}"]`)));
+  $('#crumb').textContent = pg.group || 'Shopee';
+  $$('.nav-sub a').forEach(a => a.toggleAttribute('aria-current', a.dataset.r === key));
+  renderLists();
+  const rows = filtered(key), st = P[key];
+  const pages = Math.max(1, Math.ceil(rows.length / st.size)); if (st.page > pages) st.page = pages;
+  const slice = rows.slice((st.page-1)*st.size, st.page*st.size);
+  const sel = SEL[key]; [...sel].forEach(id => { const r = S[pg.col].find(x => x._id === id); if (!r || (pg.selectable && !pg.selectable(r))) sel.delete(id); });
+  const selectable = pg.selectable ? slice.filter(pg.selectable) : [];
+  const allOn = selectable.length && selectable.every(r => sel.has(r._id));
+  const fHTML = pg.filters.map(f => {
+    if (f.type === 'range') { const has = d[f.k+'From'] || d[f.k+'To']; return `<div class="fld range"><label for="q_${f.k}From_b">${esc(f.label)}</label><div class="clrw dpw ${has?'has':''}">${dpHTML({id:'q_'+f.k+'From', id2:'q_'+f.k+'To', attr:`data-f="${f.k}From"`, attr2:`data-f="${f.k}To"`, v1:d[f.k+'From'], v2:d[f.k+'To'], label:f.label})}<button type="button" class="x-clear" data-xclear aria-label="ล้าง${esc(f.label)}">×</button></div></div>`; }
+    if (f.type === 'select') return `<div class="fld"><label for="q_${f.k}">${esc(f.label)}</label><select id="q_${f.k}" data-f="${f.k}"><option value="">ทั้งหมด</option>${f.opts().map(o => `<option ${d[f.k]===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`;
+    if (f.combo) { const vals = Array.isArray(d[f.k]) ? d[f.k] : [], ph = 'เลือกได้หลายรายการ';
+      return `<div class="fld"><label for="q_${f.k}">${esc(f.label)}</label><div class="ms" data-key="${f.k}"><div class="ms-box">${msChips(vals)}<input id="q_${f.k}" class="ms-in" type="text" data-combo="${f.combo}" data-ph="${esc(ph)}" placeholder="${vals.length ? '' : esc(ph)}" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cb_${f.k}" autocomplete="off"><button type="button" class="ms-clear" data-msclear aria-label="ล้าง${esc(f.label)}" ${vals.length ? '' : 'hidden'}>×</button></div><ul class="combo-list" id="cb_${f.k}" role="listbox" aria-multiselectable="true" hidden></ul></div></div>`; }
+    return `<div class="fld"><label for="q_${f.k}">${esc(f.label)}</label><div class="clrw ${d[f.k]?'has':''}"><input id="q_${f.k}" type="text" data-f="${f.k}" value="${esc(d[f.k]||'')}" placeholder="${f.multi ? 'ค้นหาได้หลายรายการ คั่นด้วย ,' : 'ค้นหา' + esc(f.label)}" ${f.multi ? 'data-multi title="ค้นหาได้หลายรายการ: คั่นด้วยเครื่องหมาย , หรือวางทั้งคอลัมน์จาก Excel"' : ''} autocomplete="off"><button type="button" class="x-clear" data-xclear aria-label="ล้าง${esc(f.label)}">×</button></div></div>`;
+  }).join('');
+  const head = `<tr>${pg.selectable ? `<th class="chk${pg.freeze ? ' fz' : ''}"><input type="checkbox" data-all aria-label="เลือกทั้งหมดในหน้านี้" ${allOn?'checked':''} ${selectable.length?'':'disabled'}></th>` : ''}${pg.cols.map(([l,,t],ci) => `<th class="${['money','pct','int'].includes(t)?'num':''}${ci < (pg.freeze||0) ? ' fz' + (ci === pg.freeze-1 ? ' fzl' : '') : ''}">${esc(l)}</th>`).join('')}<th class="act">ดำเนินการ</th></tr>`;
+  const body = slice.map(r => `<tr>${pg.selectable ? `<td class="chk${pg.freeze ? ' fz' : ''}">${pg.selectable(r) ? `<input type="checkbox" data-sel="${esc(r._id)}" ${sel.has(r._id)?'checked':''} aria-label="เลือก">` : ''}</td>` : ''}${pg.cols.map(([l,g,t],ci) => { const fz = ci < (pg.freeze||0) ? ' fz' + (ci === pg.freeze-1 ? ' fzl' : '') : '';
+      if (t === 'items') return `<td><button class="btn link" data-act="items" data-id="${esc(r._id)}">ดู ${g(r)} รายการ</button></td>`;
+      const v = g(r); return `<td class="${['money','pct','int'].includes(t)?'num':''}${fz}">${fmtCell(v, t)}</td>`; }).join('')}<td class="act">${pg.actions(r)}</td></tr>`).join('');
+  const selSum = key === 'workorders' ? round2([...sel].reduce((s,id) => { const w = S.workorders.find(x => x._id === id); return s + (w ? woPayable(w) : 0); }, 0)) : null;
+  $('#view').innerHTML = `
+    <form class="card filters" id="filters" autocomplete="off">${TAB[key] ? `<div class="tabs" role="tablist">${tabsOf(pg).map(t => { const all = filtered(key, true); const n = t === 'ทั้งหมด' ? all.length : all.filter(r => tabFnOf(pg)(r) === t).length; return `<button type="button" role="tab" class="tab" data-tab="${t}" aria-selected="${TAB[key]===t}">${t} <span class="cnt">${n}</span></button>`; }).join('')}</div>` : ''}<div class="fgrid">${fHTML}</div>
+      <div class="fbtns"><button type="submit" class="btn blue">${ICON.search} ค้นหา</button><button type="button" class="btn" data-clear>ล้างค่า</button><span class="sp"></span>
+      ${pg.buttons.map(([l,,ic,cls],i) => `<button type="button" class="btn ${cls||'blue'}" data-btn="${i}" ${!CAN_WRITE && !/ดาวน์โหลด/.test(l) ? 'disabled' : ''}>${ICON[ic]||''} ${esc(l)}</button>`).join('')}</div></form>
+
+    <div class="card tcard"><table><thead>${head}</thead><tbody>${body}</tbody></table>${slice.length ? '' : `<div class="empty">${MODE==='loading' ? 'กำลังโหลดข้อมูล…' : (pg.rows().length ? 'ไม่พบรายการตามเงื่อนไขค้นหา' : 'ยังไม่มีรายการ')}</div>`}</div>`;
+  if (pg.freeze) { const ths = $$('.tcard thead th.fz'); let left = 0; ths.forEach((th, i) => { const l = left; $$(`.tcard tr > :nth-child(${i+1}).fz`).forEach(c => c.style.left = l + 'px'); left += th.offsetWidth; }); }
+  // pager
+  const btns = []; const from = Math.max(1, st.page-2), to = Math.min(pages, from+4);
+  for (let i = from; i <= to; i++) btns.push(`<button data-pg="${i}" ${i===st.page?'aria-current="page"':''}>${i}</button>`);
+  $('#pager').innerHTML = `${pg.selectable ? `<span class="sel">เลือกแล้ว <b>${sel.size}</b> รายการ${selSum !== null && sel.size ? ' · ยอดที่ควรจ่าย ' + money(selSum) : ''}${sel.size ? ' · <button class="btn link" data-unsel>ยกเลิกที่เลือก</button>' : ''}</span><span class="psep" aria-hidden="true"></span>` : ''}<span>รายการทั้งหมด ${rows.length.toLocaleString('th-TH')} รายการ</span>
+    <label class="visually" style="display:flex;align-items:center;gap:6px"><select data-size aria-label="จำนวนต่อหน้า">${[10,20,50,100].map(n => `<option value="${n}" ${n===st.size?'selected':''}>${n}/หน้า</option>`).join('')}</select></label>
+    <div class="pg"><button data-pg="${st.page-1}" ${st.page<=1?'disabled':''} aria-label="ก่อนหน้า">‹</button>${btns.join('')}<button data-pg="${st.page+1}" ${st.page>=pages?'disabled':''} aria-label="ถัดไป">›</button></div>`;
+}
+
+/* ===================== events ===================== */
+document.addEventListener('click', e => {
+  const key = ROUTE, pg = PAGES[key];
+  const t = e.target.closest('button,a,input'); if (!t) return;
+  if (t.closest('#view')) {
+    if (t.matches('[data-btn]')) return pg.buttons[+t.dataset.btn][1]();
+    if (t.matches('[data-clear]')) { D[key] = defF(key); F[key] = defF(key); P[key].page = 1; return render(); }
+    if (t.matches('[data-unsel]')) { SEL[key].clear(); return render(); }
+    if (t.matches('[data-tab]')) { TAB[key] = t.dataset.tab; P[key].page = 1; return render(); }
+    if (t.matches('[data-act]')) { const r = S[pg.col].find(x => x._id === t.dataset.id); if (r) pg.onAct(t.dataset.act, r); return; }
+    if (t.matches('[data-sel]')) { t.checked ? SEL[key].add(t.dataset.sel) : SEL[key].delete(t.dataset.sel); return render(); }
+    if (t.matches('[data-all]')) { const rows = filtered(key).slice((P[key].page-1)*P[key].size, P[key].page*P[key].size).filter(pg.selectable); rows.forEach(r => t.checked ? SEL[key].add(r._id) : SEL[key].delete(r._id)); return render(); }
+  }
+  if (t.matches('#pager [data-unsel]')) { SEL[key].clear(); return render(); }
+  if (t.matches('#pager [data-pg]')) { P[key].page = +t.dataset.pg; render(); $('.tcard') && ($('.tcard').scrollTop = 0); }
+});
+document.addEventListener('input', e => { const t = e.target; if (t.matches('#filters [data-f]')) D[ROUTE][t.dataset.f] = t.value; });
+document.addEventListener('change', e => { const t = e.target; if (t.matches('#filters [data-f]')) D[ROUTE][t.dataset.f] = t.value; if (t.matches('#pager [data-size]')) { P[ROUTE].size = +t.value; P[ROUTE].page = 1; render(); } });
+document.addEventListener('paste', e => { const t = e.target; if (!t.matches || !t.matches('#filters [data-multi]')) return; const txt = (e.clipboardData || window.clipboardData).getData('text'); if (!/[\r\n\t]/.test(txt)) return; e.preventDefault(); const ins = txt.split(/[\r\n\t]+/).map(s => s.trim()).filter(Boolean).join(', '); const s = t.selectionStart, en = t.selectionEnd; t.value = t.value.slice(0, s) + (s && !/[,\s]$/.test(t.value.slice(0,s)) ? ', ' : '') + ins + t.value.slice(en); D[ROUTE][t.dataset.f] = t.value; });
+document.addEventListener('submit', e => { if (e.target.id === 'filters') { e.preventDefault(); F[ROUTE] = {...D[ROUTE]}; P[ROUTE].page = 1; render(); } });
+document.addEventListener('focusout', () => { if (pendingRender) setTimeout(() => { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest('#filters'))) render(); }, 0); });
+$$('.nav-group').forEach(b => b.onclick = () => { if (document.body.classList.contains('sb-mini')) { document.body.classList.remove('sb-mini'); return; } const on = b.getAttribute('aria-expanded') === 'true'; b.setAttribute('aria-expanded', String(!on)); document.getElementById(b.dataset.grp).hidden = on; });
+$('#menuBtn').onclick = () => document.body.classList.toggle('nav-open');
+$('#sbTog').onclick = () => { if (innerWidth <= 860) { document.body.classList.remove('nav-open'); return; } document.body.classList.toggle('sb-mini'); if (document.body.classList.contains('sb-mini')) { $$('.nav-group').forEach(b => { b.setAttribute('aria-expanded','true'); document.getElementById(b.dataset.grp).hidden = false; }); } };
+$$('.nav-sub a').forEach(a => a.addEventListener('click', () => document.body.classList.remove('nav-open')));
+function route(){ const h = (location.hash || '').slice(1); ROUTE = PAGES[h] ? h : 'workorders'; }
+window.addEventListener('hashchange', () => { route(); render(); });
+
+/* ===================== boot ===================== */
+function setConn(cls, text){ const c = $('#conn'); c.className = 'conn ' + cls; $('span', c).textContent = text; }
+function setBanner(t){ $('#banner').textContent = t; }
+function startLocal(){ DB = null; MODE = 'local'; lsLoad(); setConn('local', 'ข้อมูลในเบราว์เซอร์นี้'); setBanner('โหมดออฟไลน์: ข้อมูลจะถูกเก็บไว้ในเบราว์เซอร์นี้เท่านั้น (เปิดหน้านี้ใน claude.ai เพื่อใช้ฐานข้อมูลร่วมกัน)'); render(); }
+async function boot(){
+  route(); render();
+  if (!window.claude || typeof claude.use !== 'function') return startLocal();
+  const timer = setTimeout(() => { if (MODE === 'loading') setBanner('ยังเชื่อมต่อฐานข้อมูลไม่ได้ ข้อมูลที่แสดงอาจยังไม่ครบ'); }, 10000);
+  claude.use('assets').then(a => { ASSETS = a; }).catch(() => {});
+  let db = null; try { db = await claude.use('db'); } catch(e){}
+  if (!db) { clearTimeout(timer); return startLocal(); }
+  DB = db; const pending = new Set(COLS);
+  COLS.forEach(c => {
+    try {
+      DB.collection(c).onSnapshot(snap => {
+        S[c] = snap.docs.map(d => ({...d.data(), _id: d.id}));
+        if (!snap.metadata.fromCache && pending.has(c)) { pending.delete(c); if (!pending.size) { clearTimeout(timer); MODE = 'db'; setConn('on', 'เชื่อมต่อฐานข้อมูลแล้ว'); setBanner(''); } }
+        scheduleRender();
+      }, err => { clearTimeout(timer); if (MODE === 'loading') MODE = 'db'; setConn('', 'เชื่อมต่อไม่ได้'); setBanner('โหลดข้อมูลไม่สำเร็จ (' + (err && err.code) + ') — ข้อมูลที่แสดงอาจไม่ล่าสุด'); scheduleRender(); });
+    } catch(e){ setBanner('โหลดข้อมูลไม่สำเร็จ'); }
+  });
+  try { const u = await claude.use('user'); if (u && typeof u.can === 'function') { const w = await u.can('data.write'); if (w === false) { CAN_WRITE = false; setBanner('คุณมีสิทธิ์ดูอย่างเดียว'); scheduleRender(); } } } catch(e){}
+}
+boot();
+</script>
+</body>
+</html>
