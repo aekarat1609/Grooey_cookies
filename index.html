@@ -643,13 +643,17 @@ async function getDL(){ try { return window.claude && claude.use ? await claude.
 function toCSV(aoa){ return aoa.map(r => r.map(c => { const s = String(c ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }).join(',')).join('\r\n'); }
 async function exportXlsx(filename, sheets){
   const dl = await getDL();
-  if (!dl) { toast('ดาวน์โหลดไฟล์ไม่ได้ในหน้านี้ (เปิดหน้านี้ใน claude.ai)', 'err'); return; }
   let data, fn = filename;
   if (window.XLSX) {
     const wb = XLSX.utils.book_new();
     sheets.forEach(s => { const ws = XLSX.utils.aoa_to_sheet(s.aoa); ws['!cols'] = (s.aoa[0]||[]).map((h,i) => ({wch: Math.min(40, Math.max(10, ...s.aoa.slice(0,200).map(r => String(r[i] ?? '').length + 2)))})); XLSX.utils.book_append_sheet(wb, ws, s.name.slice(0,31)); });
     data = new Blob([XLSX.write(wb, {bookType:'xlsx', type:'array'})]);
   } else { fn = filename.replace(/\.xlsx$/,'.csv'); data = '﻿' + toCSV(sheets[0].aoa); }
+  if (!dl) {
+    try { const blob = data instanceof Blob ? data : new Blob([data], {type:'text/csv;charset=utf-8'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fn; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); toast('ดาวน์โหลด ' + fn + ' แล้ว'); }
+    catch(e){ toast('ดาวน์โหลดไม่สำเร็จ', 'err'); }
+    return;
+  }
   try { await dl.save({filename: fn, data}); toast('ดาวน์โหลด ' + fn + ' แล้ว'); }
   catch(e){ if (e && e.code === 'declined') return; toast('ดาวน์โหลดไม่สำเร็จ (' + ((e && e.code) || 'error') + ')', 'err'); }
 }
@@ -1533,7 +1537,7 @@ window.addEventListener('hashchange', () => { route(); render(); });
 /* ===================== boot ===================== */
 function setConn(cls, text){ const c = $('#conn'); c.className = 'conn ' + cls; $('span', c).textContent = text; }
 function setBanner(t){ $('#banner').textContent = t; }
-function startLocal(){ DB = null; MODE = 'local'; lsLoad(); setConn('local', 'ข้อมูลในเบราว์เซอร์นี้'); setBanner('โหมดออฟไลน์: ข้อมูลจะถูกเก็บไว้ในเบราว์เซอร์นี้เท่านั้น (เปิดหน้านี้ใน claude.ai เพื่อใช้ฐานข้อมูลร่วมกัน)'); render(); }
+function startLocal(){ DB = null; MODE = 'local'; lsLoad(); setConn('local', 'ข้อมูลในเบราว์เซอร์นี้'); setBanner('โหมดออฟไลน์: ข้อมูลจะถูกเก็บไว้ในเบราว์เซอร์นี้เท่านั้น ไม่แชร์กับผู้ใช้หรือเครื่องอื่น (เปิดผ่าน claude.ai เพื่อใช้ฐานข้อมูลร่วมกัน)'); render(); }
 async function boot(){
   route(); render();
   if (!window.claude || typeof claude.use !== 'function') return startLocal();
