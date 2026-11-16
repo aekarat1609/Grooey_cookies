@@ -943,6 +943,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   const $ = s => document.querySelector(s);
@@ -1046,6 +1047,7 @@
   function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
   function setStatus(msg, warn){ document.querySelectorAll("[data-status]").forEach(s=>{ s.textContent=msg||""; s.classList.toggle("warn",!!warn); }); }
   function errMsg(e){
+    if(e && e.userMsg) return e.userMsg;
     const c = e && e.code;
     if(c==="quota_exceeded") return "พื้นที่จัดเก็บเต็ม กรุณาลบรายการที่ไม่ใช้";
     if(c==="invalid_argument") return "บันทึกไม่ได้ (ไม่มีสิทธิ์แก้ไข หรือรูปภาพใหญ่เกินไป)";
@@ -1126,6 +1128,57 @@
     if(state.db){ await state.db.collection(COL[key]).doc(id).delete(); }
     else { state.data[key]=state.data[key].filter(x=>x.id!==id); lsSave(key); renderAll(); }
     if(!noLog && key!=="logs" && prev) writeLog(key, "ลบ", prev, null);
+  }
+
+  /* =========================================================
+     SUPABASE (ใช้เมื่อเปิดหน้าเว็บนอก Claude เช่น Vercel / GitHub Pages)
+     ========================================================= */
+  const SB_URL="https://zysbwllyecahuuqyuopr.supabase.co";
+  const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5c2J3bGx5ZWNhaHV1cXl1b3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0NzYxOTQsImV4cCI6MjExMDA1MjE5NH0.Lzw5kDOYZg7CEK2OqmIej22hMZTpMDcBrsWqY0sWKOw";
+  const SB_ON = !window.claude && !!(window.supabase && window.supabase.createClient);
+  const sbStore = {
+    getItem:k=>{ try{ return localStorage.getItem(k) ?? sessionStorage.getItem(k); }catch(e){ return null; } },
+    setItem:(k,v)=>{ try{ (localStorage.getItem("grooey_remember")==="0"?sessionStorage:localStorage).setItem(k,v); }catch(e){} },
+    removeItem:k=>{ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch(e){} }
+  };
+  const sb = SB_ON ? window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:true, autoRefreshToken:true, storage:sbStore, storageKey:"grooey-sb-auth" } }) : null;
+  state.sbAccount=null;
+  const sbEmail = u => `${String(u||"").toLowerCase()}@grooey.local`;
+  const sbErr = (e, msg) => { const er=new Error((e&&e.message)||msg||"error"); er.userMsg = msg || (e && /row-level security|permission/i.test(e.message||"") ? "คุณไม่มีสิทธิ์บันทึกข้อมูลนี้" : "บันทึกไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่"); return er; };
+  async function sbFn(action, payload){
+    const { data, error } = await sb.functions.invoke("admin-users", { body:{ action, ...(payload||{}) } });
+    if(error){ let msg=""; try{ const j=await error.context.json(); msg=j&&j.error; }catch(e){} throw sbErr(error, msg || "ติดต่อเซิร์ฟเวอร์ไม่สำเร็จ"); }
+    if(data && data.error) throw sbErr(null, data.error);
+    return data;
+  }
+  // ตัวแปลงให้ Supabase ใช้งานเหมือนฐานข้อมูลเดิม: collection(name).doc(id).set()/delete() และ onSnapshot()
+  function sbDb(){
+    const subs={}; let channel=null;
+    const emit = name => { const s=subs[name]; if(!s) return; const docs=[...s.map.entries()].map(([id,d])=>({ id, exists:true, data:()=>d })); s.cbs.forEach(cb=>{ try{ cb({ docs, metadata:{ fromCache:false } }); }catch(e){ console.error(e); } }); };
+    const load = async name => { const s=subs[name]; const m=new Map(); const step=1000; let from=0;
+      for(;;){ const { data, error } = await sb.from("app_docs").select("id,data").eq("collection",name).range(from, from+step-1); if(error) throw error; data.forEach(r=>m.set(r.id, r.data||{})); if(data.length<step) break; from+=step; }
+      s.map=m; emit(name); };
+    const ensureChannel = () => { if(channel) return;
+      channel = sb.channel("app_docs_all").on("postgres_changes", { event:"*", schema:"public", table:"app_docs" }, p => {
+        const rec = p.eventType==="DELETE" ? p.old : p.new; if(!rec || !rec.collection) return; const s=subs[rec.collection]; if(!s) return;
+        if(p.eventType==="DELETE") s.map.delete(rec.id); else s.map.set(rec.id, rec.data||{}); emit(rec.collection);
+      }).subscribe(st => { if(st==="SUBSCRIBED" && channel && channel._wasDown){ channel._wasDown=false; refresh(); } if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"||st==="CLOSED"){ if(channel) channel._wasDown=true; } });
+    };
+    let lastHidden=0;
+    const refresh = () => Object.keys(subs).forEach(n=>load(n).catch(()=>{}));
+    document.addEventListener("visibilitychange",()=>{ if(document.hidden) lastHidden=Date.now(); else if(lastHidden && Date.now()-lastHidden>30000) refresh(); });
+    window.addEventListener("online", refresh);
+    return {
+      collection(name){ return {
+        doc(id){ return {
+          async set(data){ const clean=JSON.parse(JSON.stringify(data)); const { error } = await sb.from("app_docs").upsert({ collection:name, id, data:clean, updated_at:new Date().toISOString() }); if(error) throw sbErr(error); const s=subs[name]; if(s){ s.map.set(id, clean); emit(name); } },
+          async delete(){ const { error } = await sb.from("app_docs").delete().eq("collection",name).eq("id",id); if(error) throw sbErr(error); const s=subs[name]; if(s){ s.map.delete(id); emit(name); } }
+        }; },
+        onSnapshot(cb, errCb){ const s=subs[name]||(subs[name]={ map:new Map(), cbs:[] }); s.cbs.push(cb); ensureChannel(); load(name).catch(e=>errCb&&errCb(e)); return ()=>{}; }
+      }; },
+      async upsertMany(rows){ for(let i=0;i<rows.length;i+=200){ const { error } = await sb.from("app_docs").upsert(rows.slice(i,i+200)); if(error) throw sbErr(error); } refresh(); },
+      refresh
+    };
   }
 
   /* ---------- modals ---------- */
@@ -2509,6 +2562,7 @@
   async function boot(){
     let start=""; try{ start=(location.hash||"").slice(1); }catch(e){}
     state._navClick=true; showView(start);
+    if(SB_ON) return bootSb();
     if(!window.claude || typeof window.claude.use!=="function"){ startLocal("โหมดออฟไลน์: ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น"); return; }
     let db=null;
     try{ db = await window.claude.use("db"); }catch(e){}
@@ -2519,12 +2573,33 @@
       if(user && typeof user.can==="function"){ const ok=await user.can("data.write"); if(ok===false){ state.canWrite=false; state.platformWrite=false; } }
       if(user){ try{ const me=await user.me(); state.meId=me&&me.id||null; state.isOwner=!!(me&&me.isOwner); }catch(e){} }
     }catch(e){}
+    subscribeAll(db);
+  }
+  // ===== Supabase boot: ต้องเข้าสู่ระบบก่อน จึงโหลดข้อมูลได้ (RLS)
+  async function bootSb(){
+    state.platformWrite=true; state.db=null;
+    Object.keys(COL).forEach(k=>{ state.data[k]=[]; });
+    let session=null; try{ ({ data:{ session } } = await sb.auth.getSession()); }catch(e){}
+    if(session){ try{ await sbEnter(); return; }catch(e){ try{ await sb.auth.signOut(); }catch(_){}} }
+    state.usersLoaded=true; renderAll();
+  }
+  async function sbEnter(){
+    const { data:{ user } } = await sb.auth.getUser();
+    if(!user) throw sbErr(null,"กรุณาเข้าสู่ระบบใหม่");
+    const { data:acc, error } = await sb.from("app_accounts").select("*").eq("auth_uid", user.id).maybeSingle();
+    if(error) throw sbErr(error, "เชื่อมต่อฐานข้อมูลไม่สำเร็จ");
+    if(!acc || !acc.active){ await sb.auth.signOut(); throw sbErr(null, "บัญชีนี้ถูกระงับ หรือไม่มีสิทธิ์เข้าใช้งาน"); }
+    state.sbAccount=acc; state.sessUid=acc.user_doc_id; state.usersLoaded=false;
+    const db=sbDb(); state.db=db; renderAll();
+    subscribeAll(db);
+  }
+  function subscribeAll(db){
     let pending=new Set(Object.keys(COL));
     const timer=setTimeout(()=>{ if(pending.size) setStatus("ยังเชื่อมต่อฐานข้อมูลไม่ได้ กำลังลองใหม่…", true); },10000);
     Object.keys(COL).forEach(key=>{
       db.collection(COL[key]).onSnapshot(snap=>{
         state.data[key] = snap.docs.filter(d=>d.exists).map(d=>({ ...d.data(), id:d.id }));
-        if(key==="users") state.usersLoaded=true;
+        if(key==="users"){ state.usersLoaded=true; if(state.sbLoginLog){ const u=sessionUser(); if(u){ state.sbLoginLog=false; writeLog("users","เข้าสู่ระบบ",{name:u.name},null,true); toast(`ยินดีต้อนรับ ${u.name}`); } } }
         if(!snap.metadata.fromCache && pending.delete(key) && !pending.size){ clearTimeout(timer); setStatus(state.canWrite?"":"คุณมีสิทธิ์ดูอย่างเดียว"); }
         renderAll();
       }, err=>{
@@ -3177,7 +3252,14 @@
     if(self && data.status==="suspended"){ err.textContent="ไม่สามารถระงับบัญชีของตัวเองได้"; return; }
     if(self && data.roleId!=="role-owner" && !state.isOwner && !(rolesList().find(r=>r.id===data.roleId)||{perms:{}}).perms?.["set-users"]?.e){ err.textContent="ไม่สามารถลดสิทธิ์ของตัวเองจนแก้ไขบัญชีผู้ใช้ไม่ได้"; return; }
     const btn=mUser.querySelector("[data-ok]"); btn.disabled=true;
-    try{ await save("users", editUserId||newId("usr"), data); close(mUser); toast(editUserId?"บันทึกการแก้ไขแล้ว":"เพิ่มผู้ใช้งานแล้ว"); }catch(er){ err.textContent=errMsg(er); } finally{ btn.disabled=false; }
+    const uid=editUserId||newId("usr");
+    try{
+      if(SB_ON){
+        delete data.salt; data.passHash="supabase"; if(pw) data.mustChange=false;
+        await sbFn("upsert", { username, oldUsername:(prev&&prev.passHash&&prev.username)||username, password:pw||undefined, userDocId:uid, roleId:data.roleId, active:data.status!=="suspended", mustChange: pw ? false : undefined });
+      }
+      await save("users", uid, data); close(mUser); toast(editUserId?"บันทึกการแก้ไขแล้ว":"เพิ่มผู้ใช้งานแล้ว");
+    }catch(er){ err.textContent=errMsg(er); } finally{ btn.disabled=false; }
   });
   const lastActive = () => { const m={}; (state.data.logs||[]).forEach(l=>{ if(l.uid && (!m[l.uid]||l.at>m[l.uid])) m[l.uid]=l.at; }); return m; };
   function usersFiltered(){ const f=uiU.filter; return [superUser(), ...(state.data.users||[]).filter(u=>u.id!==SUPER_ID)].filter(u=>(mt(f.name,u.name)||mt(f.name,u.username?"@"+u.username:"")) && mt(f.role,(roleById(u.roleId)||{}).name||"-") && mt(f.status,u.status||"active")).sort((a,b)=>natCmp(a.name,b.name)); }
@@ -3223,7 +3305,7 @@
     if(b.dataset.act==="link") confirmBox("ผูกบัญชี", `ผูกบัญชีที่คุณกำลังใช้งานกับ <b>${esc(u.name)}</b> ใช่หรือไม่?<div class="hint" style="margin-top:6px">หลังจากนี้ประวัติการใช้งานจะบันทึกเป็นชื่อนี้ และใช้สิทธิ์ตามบทบาท ${esc((roleById(u.roleId)||{}).name||"")}</div>`, "ผูกบัญชี", async ()=>{
       for(const o of (state.data.users||[])) if(o.platformId===state.meId) await save("users", o.id, {...stripId(o), platformId:""});
       await save("users", u.id, {...stripId(u), platformId:state.meId}); toast(`ผูกบัญชีกับ ${u.name} แล้ว`); });
-    if(b.dataset.act==="del") confirmBox("ลบผู้ใช้งาน", `ต้องการลบ <b>${esc(u.name)}</b> ใช่หรือไม่?<div class="hint" style="margin-top:6px">ประวัติการใช้งานของผู้ใช้นี้จะยังอยู่</div>`, "ลบ", async ()=>{ await remove("users", u.id); toast("ลบผู้ใช้งานแล้ว"); });
+    if(b.dataset.act==="del") confirmBox("ลบผู้ใช้งาน", `ต้องการลบ <b>${esc(u.name)}</b> ใช่หรือไม่?<div class="hint" style="margin-top:6px">ประวัติการใช้งานของผู้ใช้นี้จะยังอยู่</div>`, "ลบ", async ()=>{ if(SB_ON && u.username && u.passHash) await sbFn("delete",{ username:u.username }); await remove("users", u.id); toast("ลบผู้ใช้งานแล้ว"); });
   });
   qU('[data-search]').addEventListener("submit",e=>{ e.preventDefault(); Object.keys(uiU.filter).forEach(k=>uiU.filter[k]=readF(qU(`[data-f=${k}]`))); uiU.page=1; renderUsers(); });
   qU('[data-clear]').addEventListener("click",()=>{ secU.querySelectorAll("[data-f]").forEach(clearF); Object.keys(uiU.filter).forEach(k=>uiU.filter[k]=""); uiU.page=1; renderUsers(); });
@@ -3407,8 +3489,15 @@
   const SUPER_ID="u-superadmin", SUPER_USER="superadmin", SUPER_DEFAULT_PW="Superadmin";
   const superUser = () => { const d=(state.data.users||[]).find(u=>u.id===SUPER_ID)||{}; return { ...d, id:SUPER_ID, username:"Superadmin", name:"Superadmin", roleId:"role-owner", status:"active", builtin:true }; };
   const hasAccounts = () => true;
-  const sessionUser = () => !state.sessUid ? null : state.sessUid===SUPER_ID ? superUser() : (state.data.users||[]).find(u=>u.id===state.sessUid && u.status!=="suspended" && u.passHash) || null;
+  const sessionUser = () => SB_ON ? sbSessionUser() : !state.sessUid ? null : state.sessUid===SUPER_ID ? superUser() : (state.data.users||[]).find(u=>u.id===state.sessUid && u.status!=="suspended" && u.passHash) || null;
 
+  function sbSessionUser(){
+    const a=state.sbAccount; if(!a) return null;
+    if(a.user_doc_id===SUPER_ID) return { ...superUser(), passHash:"supabase", mustChange:!!a.must_change };
+    const d=(state.data.users||[]).find(u=>u.id===a.user_doc_id);
+    if(!d && !state.usersLoaded) return null;
+    return { ...(d||{ name:a.username, username:a.username }), id:a.user_doc_id, roleId:a.role_id, status:"active", passHash:"supabase", mustChange:!!a.must_change };
+  }
   const LS_LOGO = document.querySelector(".brand-logo") ? document.querySelector(".brand-logo").getAttribute("src") : "";
   const login=document.createElement("div"); login.id="loginScreen"; login.className="login-screen";
   login.innerHTML=`<div class="login-box">
@@ -3445,6 +3534,22 @@
     if(Date.now()<lockUntil){ err.textContent=`ลองผิดหลายครั้ง กรุณารอ ${Math.ceil((lockUntil-Date.now())/1000)} วินาที`; return; }
     const un=L("[data-l=user]").value.trim().toLowerCase(), pw=L("[data-l=pass]").value;
     if(!un||!pw){ err.textContent="กรุณากรอกบัญชีใช้งานและรหัสผ่าน"; return; }
+    if(SB_ON){
+      const btn=L("[data-l=go]"); btn.disabled=true; btn.textContent="กำลังเข้าสู่ระบบ…";
+      try{
+        try{ localStorage.setItem("grooey_remember", L("[data-l=remember]").checked?"1":"0"); }catch(e){}
+        let { error } = await sb.auth.signInWithPassword({ email:sbEmail(un), password:pw });
+        if(error && un===SUPER_USER && pw===SUPER_DEFAULT_PW){ try{ const r=await sbFn("bootstrap",{}); if(r && r.created) ({ error } = await sb.auth.signInWithPassword({ email:sbEmail(un), password:pw })); }catch(e){} }
+        if(error){
+          if(/banned/i.test(error.message||"")){ err.textContent="บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อเจ้าของร้าน"; return; }
+          if(/fetch|network/i.test(error.message||"")){ err.textContent="เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาลองใหม่"; return; }
+          fails++; if(fails>=5){ lockUntil=Date.now()+30000; fails=0; } err.textContent="บัญชีใช้งานหรือรหัสผ่านไม่ถูกต้อง"; L("[data-l=pass]").select(); return;
+        }
+        fails=0; state.sbLoginLog=true; await sbEnter(); L("[data-l=pass]").value=""; showView(state.view);
+      }catch(er){ err.textContent=errMsg(er); }
+      finally{ btn.disabled=false; btn.textContent="เข้าสู่ระบบ"; }
+      return;
+    }
     const u = un===SUPER_USER ? superUser() : (state.data.users||[]).find(x=>x.id!==SUPER_ID && (x.username||"").toLowerCase()===un);
     const ok = !!u && (u.passHash ? (await hashPw(pw, u.salt||""))===u.passHash : (u.builtin && pw===SUPER_DEFAULT_PW));
     if(!ok){ fails++; if(fails>=5){ lockUntil=Date.now()+30000; fails=0; } err.textContent="บัญชีใช้งานหรือรหัสผ่านไม่ถูกต้อง"; L("[data-l=pass]").select(); return; }
@@ -3470,7 +3575,7 @@
   // top bar user menu
   const tb=document.createElement("div"); tb.className="tb-user"; tb.id="tbUser";
   tb.innerHTML=`<button type="button" class="tb-btn" data-tb><span class="ava" data-tb-ava></span><span class="tb-txt"><b data-tb-name></b><small data-tb-role></small></span>${CARET}</button>
-    <div class="tb-menu" data-tb-menu><button type="button" data-tb-act="pw">${ICON.key}เปลี่ยนรหัสผ่าน</button><button type="button" data-tb-act="out">${ICON.out}ออกจากระบบ</button></div>`;
+    <div class="tb-menu" data-tb-menu><button type="button" data-tb-act="pw">${ICON.key}เปลี่ยนรหัสผ่าน</button><button type="button" data-tb-act="export" data-owner-only>${ICON.dl||""}ส่งออกข้อมูลทั้งหมด</button><button type="button" data-tb-act="import" data-owner-only data-sb-only>${ICON.up||ICON.dl||""}นำเข้าข้อมูล</button><button type="button" data-tb-act="out">${ICON.out}ออกจากระบบ</button></div>`;
   document.querySelector(".topbar").appendChild(tb);
   tb.querySelector("[data-tb]").addEventListener("click",()=>tb.classList.toggle("open"));
   document.addEventListener("mousedown",e=>{ if(!tb.contains(e.target)) tb.classList.remove("open"); }, true);
@@ -3482,6 +3587,19 @@
   mPw.addEventListener("click",e=>{ if(mPw.classList.contains("forced") && (e.target===mPw || e.target.closest("[data-close]"))){ e.stopImmediatePropagation(); if(!mPw.classList.contains("show")) open("#mPw"); } }, true);
   mPw.querySelector("form").addEventListener("submit",async e=>{
     e.preventDefault(); const g=k=>mPw.querySelector(`[data-p=${k}]`), err=mPw.querySelector("[data-err]"); const u=sessionUser(); if(!u) return;
+    if(SB_ON){
+      if(g("new").value.length<6){ err.textContent="รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร"; return; }
+      if(g("new").value!==g("new2").value){ err.textContent="ยืนยันรหัสผ่านใหม่ไม่ตรงกัน"; return; }
+      const btn=mPw.querySelector("[data-ok]"); btn.disabled=true;
+      try{
+        const { error } = await sb.auth.signInWithPassword({ email:sbEmail(state.sbAccount.username), password:g("old").value });
+        if(error){ err.textContent="รหัสผ่านปัจจุบันไม่ถูกต้อง"; return; }
+        await sbFn("self-password", { password:g("new").value });
+        state.sbAccount.must_change=false;
+        writeLog("users","แก้ไข",{name:`${u.name} • เปลี่ยนรหัสผ่าน`},null,true); mPw.classList.remove("forced"); close(mPw); toast("เปลี่ยนรหัสผ่านแล้ว");
+      }catch(er){ err.textContent=errMsg(er); } finally{ btn.disabled=false; }
+      return;
+    }
     const oldOk = u.passHash ? (await hashPw(g("old").value, u.salt||""))===u.passHash : (u.builtin && g("old").value===SUPER_DEFAULT_PW);
     if(!oldOk){ err.textContent="รหัสผ่านปัจจุบันไม่ถูกต้อง"; return; }
     if(g("new").value.length<6){ err.textContent="รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร"; return; }
@@ -3491,8 +3609,12 @@
     writeLog("users","แก้ไข",{name:`${u.name} • เปลี่ยนรหัสผ่าน`},null,true); mPw.classList.remove("forced"); close(mPw); toast("เปลี่ยนรหัสผ่านแล้ว");
   });
   tb.querySelector("[data-tb-menu]").addEventListener("click",e=>{ const b=e.target.closest("[data-tb-act]"); if(!b) return; tb.classList.remove("open");
+    if(b.dataset.tbAct==="export"){ exportAll(); return; }
+    if(b.dataset.tbAct==="import"){ openImport(); return; }
     if(b.dataset.tbAct==="pw"){ mPw.querySelectorAll("input").forEach(i=>i.value=""); mPw.querySelector("[data-err]").textContent=""; open("#mPw"); }
-    if(b.dataset.tbAct==="out"){ const u=sessionUser(); if(u) writeLog("users","ออกจากระบบ",{name:u.name},null,true); clearSess(); state.sessUid=null; authGate(); }
+    if(b.dataset.tbAct==="out"){ const u=sessionUser();
+      if(SB_ON){ (async()=>{ try{ if(u) await writeLog("users","ออกจากระบบ",{name:u.name},null,true); }catch(e){} try{ await sb.auth.signOut(); }catch(e){} location.reload(); })(); return; }
+      if(u) writeLog("users","ออกจากระบบ",{name:u.name},null,true); clearSess(); state.sessUid=null; authGate(); }
   });
   /* ----- ตรวจสอบผู้ใช้ / รีเซ็ตรหัสผ่าน ----- */
   const userById = id => id===SUPER_ID ? superUser() : (state.data.users||[]).find(x=>x.id===id) || null;
@@ -3563,6 +3685,10 @@
     if(!u.username){ err.textContent="ผู้ใช้นี้ยังไม่มีบัญชีใช้งาน กรุณากดแก้ไขเพื่อกำหนดบัญชีใช้งานก่อน"; return; }
     const btn=mReset.querySelector("[data-ok]"); btn.disabled=true;
     try{ const salt=newSalt(); const must=mReset.querySelector("[data-rs=must]").checked && u.id!==state.sessUid;
+      if(SB_ON){
+        await sbFn("upsert", { username:u.username, oldUsername:(u.passHash&&u.username)||u.username, password:pw, userDocId:u.id, roleId:u.roleId, active:u.status!=="suspended", mustChange:must });
+        await save("users", u.id, {...stripId(u), salt:"", passHash:"supabase", mustChange:must, pwResetAt:Date.now(), pwResetBy:state.sessUid||"", updatedAt:Date.now()}, true);
+      } else
       await save("users", u.id, {...stripId(u), salt, passHash:await hashPw(pw, salt), mustChange:must, pwResetAt:Date.now(), pwResetBy:state.sessUid||"", updatedAt:Date.now()}, true);
       writeLog("users","แก้ไข",{name:`${u.name} • รีเซ็ตรหัสผ่าน${must?" (ต้องเปลี่ยนเมื่อเข้าสู่ระบบ)":""}`},null);
       close(mReset);
@@ -3581,6 +3707,44 @@
     }
     if(!forced) mPw.querySelector("[data-title]").textContent="เปลี่ยนรหัสผ่าน";
   }
+  /* ----- ส่งออก / นำเข้าข้อมูล (ย้ายข้อมูลจากเวอร์ชันเดิมเข้า Supabase) ----- */
+  async function exportAll(){
+    const out={ app:"grooey-stock", version:1, exportedAt:new Date().toISOString(), collections:{} };
+    Object.keys(COL).forEach(k=>{ out.collections[k]=(state.data[k]||[]).map(d=>({...d})); });
+    const json=JSON.stringify(out);
+    const fn=`grooey-backup-${todayStr()}.json`;
+    let dl=null; try{ dl = window.claude ? await window.claude.use("downloads") : null; }catch(e){}
+    if(dl){ try{ await dl.save({ filename:fn, data:json }); toast("ส่งออกข้อมูลแล้ว"); return; }catch(e){ if(e && /cancel|declin|abort/i.test(String(e.code||e.message))) return; } }
+    try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([json],{type:"application/json"})); a.download=fn; document.body.appendChild(a); a.click(); a.remove(); toast("ส่งออกข้อมูลแล้ว"); }catch(e){ toast("ส่งออกไม่สำเร็จ"); }
+  }
+  const mImp=mkModal("mImp","นำเข้าข้อมูล",`
+    <p class="muted" style="margin:0 0 10px">ย้ายข้อมูลจากเวอร์ชันเดิมเข้าฐานข้อมูลออนไลน์ ข้อมูลที่มีรหัสเดียวกันจะถูกเขียนทับ</p>
+    <label class="chk" style="margin-bottom:8px"><input type="radio" name="impSrc" value="file" checked> จากไฟล์สำรอง (.json) ที่ส่งออกจากเวอร์ชันใน Claude</label>
+    <div class="field" data-imp-file><input type="file" accept=".json,application/json" data-imp-input></div>
+    <label class="chk" style="margin:8px 0"><input type="radio" name="impSrc" value="local"> จากข้อมูลเดิมที่เก็บในเบราว์เซอร์เครื่องนี้ <span class="hint" data-imp-local></span></label>
+    <div class="hint">บัญชีผู้ใช้ที่นำเข้าจะต้องตั้งรหัสผ่านใหม่ (กดแก้ไขแล้วใส่รหัสผ่าน)</div>`, "นำเข้า");
+  function openImport(){
+    let n=0; Object.keys(COL).forEach(k=>{ try{ const v=JSON.parse(localStorage.getItem(LS[k])||"null"); if(Array.isArray(v)) n+=v.length; }catch(e){} });
+    mImp.querySelector("[data-imp-local]").textContent = n ? `(พบ ${n} รายการ)` : "(ไม่พบข้อมูล)";
+    mImp.querySelector("[data-imp-input]").value=""; mImp.querySelector("[data-err]").textContent=""; open("#mImp");
+  }
+  mImp.querySelector("form").addEventListener("submit", async e=>{
+    e.preventDefault(); const err=mImp.querySelector("[data-err]"); err.textContent="";
+    const src=mImp.querySelector("input[name=impSrc]:checked").value; let cols={};
+    try{
+      if(src==="file"){ const f=mImp.querySelector("[data-imp-input]").files[0]; if(!f){ err.textContent="กรุณาเลือกไฟล์"; return; }
+        const j=JSON.parse(await f.text()); if(!j || !j.collections){ err.textContent="ไฟล์ไม่ถูกต้อง"; return; } cols=j.collections; }
+      else { Object.keys(COL).forEach(k=>{ try{ const v=JSON.parse(localStorage.getItem(LS[k])||"null"); if(Array.isArray(v)) cols[k]=v; }catch(e){} }); }
+    }catch(er){ err.textContent="อ่านไฟล์ไม่สำเร็จ"; return; }
+    const rows=[]; const now=new Date().toISOString();
+    Object.keys(COL).forEach(k=>{ (cols[k]||[]).forEach(d=>{ if(!d || !d.id) return; let {id, ...data}=d;
+      if(k==="users"){ if(id===SUPER_ID) return; data={...data, salt:"", passHash:"", mustChange:false}; }
+      rows.push({ collection:COL[k], id:String(id), data, updated_at:now }); }); });
+    if(!rows.length){ err.textContent="ไม่พบข้อมูลที่จะนำเข้า"; return; }
+    const btn=mImp.querySelector("[data-ok]"); btn.disabled=true; btn.textContent="กำลังนำเข้า…";
+    try{ await state.db.upsertMany(rows); close(mImp); toast(`นำเข้าข้อมูลแล้ว ${rows.length} รายการ`); writeLog("users","แก้ไข",{name:`นำเข้าข้อมูล ${rows.length} รายการ`},null); }
+    catch(er){ err.textContent=errMsg(er); } finally{ btn.disabled=false; btn.textContent="นำเข้า"; }
+  });
   function authGate(){
     const loaded=!!state.usersLoaded, u=sessionUser(), need = !u;
     document.body.classList.toggle("need-login", need);
@@ -3589,6 +3753,7 @@
     login.querySelector('[data-pane=setup]').style.display = need && loaded && !hasAccounts() ? "" : "none";
     if(need && loaded){ const f=login.querySelector(hasAccounts()?'[data-l=user]':'[data-s=user]'); if(f && document.activeElement!==f && !login.contains(document.activeElement)) setTimeout(()=>f.focus(),30); }
     if(u) setTimeout(forceChangeCheck,0);
+    if(u){ const isOwnerRole=(u.roleId==="role-owner"); tb.querySelectorAll("[data-owner-only]").forEach(x=>x.style.display=isOwnerRole?"":"none"); if(!SB_ON) tb.querySelectorAll("[data-sb-only]").forEach(x=>x.style.display="none"); }
     if(u){ const r=currentRole(); tb.querySelector("[data-tb-ava]").textContent=(u.name||"?").replace(/^[เแโใไ]+/,"").slice(0,1).toUpperCase(); tb.querySelector("[data-tb-name]").textContent=u.name; tb.querySelector("[data-tb-role]").textContent=r?r.name:""; }
     return !need;
   }
