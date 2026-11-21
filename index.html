@@ -433,6 +433,16 @@
   .perm-tbl td.perm-sub{padding-left:30px}
   .perm-tbl tbody tr:hover td{background:#FAFAFA}
   .perm-tbl tr.perm-g:hover td{background:#FFF4EE}
+  .table-card > table > tbody > tr.perm-g > td:last-child{background:#FFF4EE}
+  .perm-gcb{accent-color:var(--orange-d)}
+  .pb-list{display:flex;flex-wrap:wrap;gap:6px}
+  .pb-chip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;background:#F6F6F6;border:1px solid #E8E8E8;border-radius:999px;padding:3px 10px 3px 7px;white-space:nowrap;cursor:pointer}
+  .pb-chip input{margin:0;accent-color:var(--orange)}
+  .pb-chip:has(input:checked){background:#FFF1E6;border-color:#FDCBA8;color:var(--orange-d)}
+  .pb-chip.off{opacity:.45;cursor:default}
+  .table-card > table.perm-tbl > thead > tr > th:last-child,.table-card > table.perm-tbl > tbody > tr > td:last-child{position:static!important;box-shadow:none!important;white-space:normal!important;min-width:0}
+  .table-card > table.perm-tbl{table-layout:fixed;width:100%;min-width:900px}
+  .table-card > table.perm-tbl > thead > tr > th:last-child{background:var(--orange)}
   .perm-sum{display:flex;gap:14px;flex-wrap:wrap;font-size:13px}
   body.no-del td .icon-btn.del{display:none}
   body.need-login .layout,body.need-login .topbar{visibility:hidden}
@@ -2871,6 +2881,7 @@
     MODS.forEach(m=>m.render(state.view));
   }
 
+
   /* =========================================================
      BOOT
      ========================================================= */
@@ -3944,6 +3955,7 @@
     const g=a.closest(".nav-group"); return { view:a.dataset.view, label:a.getAttribute("title")||a.textContent.trim(), group: g ? g.querySelector(".grp-head").getAttribute("title") : "" }; });
   const navLabel = v => { const m=ALL_VIEWS_P().find(x=>x.view===v); return m ? (m.group && m.group!==m.label ? `${m.group} › ${m.label}` : m.label) : v; };
   const P = (v,e,d) => ({v:v?1:0, e:e?1:0, d:d?1:0});
+  const PERM_FB={"count-log":"mat-count","semi-in":"mat-in","semi-out":"mat-out","semi-count":"mat-count","semi-prod":"prod-create","semi-list":"prep-need","semi-recipe":"prep-need"};
   const permsFrom = fn => { const o={}; ["dashboard","products","sale-bills","sale-report","fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","count-log","semi-in","semi-out","semi-prod","semi-list","semi-recipe","prod-create","prep-need","set-users","set-roles","set-perms","set-logs","set-billno"].forEach(v=>o[v]=fn(v)); return o; };
   const DEFAULT_ROLES = [
     { id:"role-owner", name:"เจ้าของร้าน", desc:"ใช้งานได้ทุกเมนู รวมถึงการตั้งค่าระบบ", system:true, perms:permsFrom(()=>P(1,1,1)) },
@@ -3959,7 +3971,39 @@
   const currentRole = () => { const u=currentUser(); if(u) return roleById(u.roleId) || roleById("role-sales");
     if(state.isOwner || !state.db) return roleById("role-owner") || DEFAULT_ROLES[0];
     return roleById("role-sales") || DEFAULT_ROLES[2]; };
-  const permOf = v => { const r=currentRole(); if(!r) return P(1,1,1); if(r.id==="role-owner") return P(1,1,1); const PFB={"count-log":"mat-count","semi-in":"mat-in","semi-out":"mat-out","semi-count":"mat-count","semi-prod":"prod-create","semi-list":"prep-need","semi-recipe":"prep-need"}; const p=(r.perms||{})[v] || (PFB[v] ? (r.perms||{})[PFB[v]] : null); return p ? {v:!!p.v, e:!!p.v&&!!p.e, d:!!p.v&&!!p.d} : P(0,0,0); };
+  const permOf = v => { const r=currentRole(); if(!r) return P(1,1,1); if(r.id==="role-owner") return P(1,1,1); const PFB=PERM_FB; const p=(r.perms||{})[v] || (PFB[v] ? (r.perms||{})[PFB[v]] : null); return p ? {v:!!p.v, e:!!p.v&&!!p.e, d:!!p.v&&!!p.d} : P(0,0,0); };
+  /* ----- สิทธิ์รายปุ่ม: กำหนดได้ว่าแต่ละบทบาทเห็นปุ่มไหนในแต่ละเมนู (ไม่ได้ตั้ง = ใช้ได้) ----- */
+  const B_ADD=["add","เพิ่มรายการ","[data-add]"], B_DL=["download","ดาวน์โหลด","[data-download]"];
+  const B_MV=[B_ADD, B_DL, ["delmv","ลบรายการ","[data-act=delmv]"]];
+  const B_LIST=[B_ADD, B_DL, ["in","รับเข้า / เพิ่มเข้า","[data-act=in]"], ["out","นำออก / เสียหาย","[data-act=out]"], ["edit","แก้ไข","[data-act=edit]"], ["del","ลบ","[data-act=del]"]];
+  const B_CNT=[["saveall","บันทึกผลตรวจนับ (ทั้งหมด)","[data-saveall]"], ["savecount","บันทึกทีละรายการ","[data-act=savecount]"], B_DL];
+  const B_PROD=[B_ADD, B_DL, ["start","เริ่มผลิต","[data-act=start]"], ["done","ผลิตเสร็จ","[data-act=done]"], ["del","ลบ","[data-act=del]"]];
+  const BTN_DEFS = {
+    "products":[["add","ขายสินค้า (เลือกหลายรายการ)","#btnAdd"], ["sell","ขายรายการนี้","[data-act=sell]"], ["download","ดาวน์โหลด","#btnDownload"]],
+    "sale-bills":[["add","เพิ่มรายการ","#btnAdd"], ["upload","อัปโหลด","#btnUpload"], ["download","ดาวน์โหลด","#btnDownload"], ["void","ยกเลิกบิล","[data-void]"]],
+    "sale-report":[["download","ดาวน์โหลด","#btnDownload"]],
+    "fg-in":B_MV, "fg-out":B_MV, "mat-in":B_MV, "mat-out":B_MV, "semi-in":B_MV, "semi-out":B_MV,
+    "finished":B_LIST, "materials":B_LIST,
+    "mat-count":B_CNT, "semi-count":B_CNT, "fg-count":B_CNT, "count-log":[B_DL],
+    "semi-prod":B_PROD, "prod-create":B_PROD,
+    "semi-list":[B_ADD, B_DL, ["prod","สร้างการผลิต","[data-act=prod]"], ["edit","แก้ไขสูตร","[data-act=edit]"], ["del","ลบ","[data-act=del]"]],
+    "semi-recipe":[B_ADD, B_DL, ["edit","แก้ไขสูตร","[data-act=edit]"]],
+    "prep-need":[B_ADD, B_DL, ["recipe","แก้ไขสูตร","[data-act=recipe]"]],
+    "set-users":[B_ADD, B_DL, ["check","ตรวจสอบ","[data-act=check]"], ["reset","รีเซ็ตรหัสผ่าน","[data-act=reset]"], ["edit","แก้ไข","[data-act=edit]"], ["del","ลบ","[data-act=del]"]],
+    "set-roles":[B_ADD, B_DL, ["perm","ตั้งค่าสิทธิ์","[data-act=perm]"], ["edit","แก้ไข","[data-act=edit]"], ["del","ลบ","[data-act=del]"]],
+    "set-perms":[["preset","ปุ่มลัด (ให้ทุกสิทธิ์ / ดูอย่างเดียว / ล้าง)","[data-preset]"], ["save","บันทึกสิทธิ์","[data-psave]"]],
+    "set-logs":[B_DL],
+    "set-billno":[["save","บันทึกการตั้งค่า","[data-bsave]"], ["reset","คืนค่าเริ่มต้น","[data-breset]"]],
+  };
+  const permRaw = v => { const r=currentRole(); if(!r) return null; const P0=r.perms||{}; return P0[v] || (PERM_FB[v]?P0[PERM_FB[v]]:null); };
+  const btnOk = (v,k) => { const r=currentRole(); if(!r || r.id==="role-owner") return true; const p=permRaw(v); return !(p && p.b && p.b[k]===0); };
+  function enforceBtns(){
+    const v=state.view, defs=BTN_DEFS[v]; if(!defs) return;
+    const sec=document.getElementById("view-"+(v.startsWith("sale-")?"products":v)); if(!sec) return;
+    defs.forEach(([k,,sel])=>{ const ok=btnOk(v,k); sec.querySelectorAll(sel).forEach(el=>{ if(!ok){ if(el.dataset.bpHid!=="1"){ el.dataset.bpHid="1"; el.style.display="none"; } } else if(el.dataset.bpHid==="1"){ el.dataset.bpHid=""; el.style.display=""; } }); });
+  }
+  { let q=false; new MutationObserver(()=>{ if(q) return; q=true; requestAnimationFrame(()=>{ q=false; try{ enforceBtns(); }catch(e){} }); }).observe(document.body,{childList:true,subtree:true}); }
+
   function applyPerms(){
     document.querySelectorAll(".sidebar .nav-item[data-view]").forEach(a=>{ a.style.display = permOf(a.dataset.view).v ? "" : "none"; });
     document.querySelectorAll(".sidebar .nav-group").forEach(g=>{ const any=[...g.querySelectorAll(".sub .nav-item[data-view]")].some(a=>a.style.display!=="none"); g.style.display = any ? "" : "none"; });
@@ -4209,33 +4253,46 @@
         <div class="hint" data-pnote style="flex-basis:100%"></div>
       </div>
       <div class="card table-card perm-card"><table class="perm-tbl"><thead><tr>
-        <th>เมนู</th>
-        <th class="center" style="width:150px"><label class="chk-h"><input type="checkbox" data-col="v"> ดู</label></th>
-        <th class="center" style="width:170px"><label class="chk-h"><input type="checkbox" data-col="e"> เพิ่ม / แก้ไข</label></th>
-        <th class="center" style="width:150px"><label class="chk-h"><input type="checkbox" data-col="d"> ลบ</label></th>
+        <th style="width:230px">เมนู</th>
+        <th class="center" style="width:90px"><label class="chk-h"><input type="checkbox" data-col="v"> ดู</label></th>
+        <th class="center" style="width:130px"><label class="chk-h"><input type="checkbox" data-col="e"> เพิ่ม / แก้ไข</label></th>
+        <th class="center" style="width:90px"><label class="chk-h"><input type="checkbox" data-col="d"> ลบ</label></th>
+        <th>สิทธิ์รายปุ่ม <span class="sub" style="font-weight:400">(ติ๊กออก = ซ่อนปุ่มนั้น)</span></th>
       </tr></thead><tbody data-body></tbody></table></div>
       <div class="status" data-status></div></div>`;
   const qPm=s=>secPm.querySelector(s);
   function renderPerms(){
     const r=roleById(permRoleId) || rolesList()[1] || rolesList()[0]; permRoleId=r.id;
     qPm('[data-prole]').innerHTML=roleOptions(r.id);
-    if(!permDraft || permDraft._role!==r.id){ permDraft={_role:r.id, p:JSON.parse(JSON.stringify(r.perms||{}))}; }
+    if(!permDraft || permDraft._role!==r.id){ const src=r.perms||{}, p=JSON.parse(JSON.stringify(src));
+      ALL_VIEWS_P().forEach(m=>{ if(!p[m.view]){ const fb=PERM_FB[m.view]; p[m.view] = fb&&src[fb] ? {...src[fb]} : P(0,0,0); } });
+      permDraft={_role:r.id, p}; }
     const lock=r.id==="role-owner", dis=(!state.canWrite||lock)?"disabled":"";
     qPm('[data-pnote]').textContent = lock ? "บทบาทเจ้าของร้านมีสิทธิ์ทุกเมนูเสมอ แก้ไขไม่ได้" : "“เพิ่ม / แก้ไข” และ “ลบ” ใช้ได้เมื่อเลือก “ดู” ด้วย • ผู้ใช้ที่ไม่มีสิทธิ์ดูจะไม่เห็นเมนูนั้น";
     secPm.querySelectorAll("[data-preset],[data-psave]").forEach(b=>b.disabled=!!dis);
     let lastG=null; const rows=[];
-    ALL_VIEWS_P().forEach(m=>{ if(m.group!==lastG){ lastG=m.group; if(m.group) rows.push(`<tr class="perm-g"><td colspan="4">${esc(m.group)}</td></tr>`); }
+    const grpViews = g => ALL_VIEWS_P().filter(x=>x.group===g);
+    const gcb = (g,k) => { const vs=grpViews(g), on=vs.every(x=>lock||(permDraft.p[x.view]||{})[k]), some=vs.some(x=>lock||(permDraft.p[x.view]||{})[k]);
+      return `<input type="checkbox" class="perm-gcb" data-pg="${esc(g)}" data-k="${k}" ${on?"checked":""} ${!on&&some?'data-mixed="1"':""} ${dis} title="เลือกทั้งกลุ่ม">`; };
+    ALL_VIEWS_P().forEach(m=>{ if(m.group!==lastG){ lastG=m.group; if(m.group) rows.push(`<tr class="perm-g"><td>${esc(m.group)}</td><td class="center">${gcb(m.group,"v")}</td><td class="center">${gcb(m.group,"e")}</td><td class="center">${gcb(m.group,"d")}</td><td></td></tr>`); }
       const p = lock ? P(1,1,1) : (permDraft.p[m.view]||P(0,0,0));
       const cb=(k)=>`<input type="checkbox" data-pv="${esc(m.view)}" data-k="${k}" ${p[k]?"checked":""} ${dis} ${k!=="v"&&!p.v?"disabled":""}>`;
-      rows.push(`<tr><td class="${m.group?"perm-sub":"pname"}">${esc(m.label)}</td><td class="center">${cb("v")}</td><td class="center">${cb("e")}</td><td class="center">${cb("d")}</td></tr>`); });
+      const defs=BTN_DEFS[m.view]||[], bb=(p.b||{});
+      const btns = defs.length ? `<div class="pb-list">${defs.map(([k,lbl])=>`<label class="pb-chip ${(!lock&&!p.v)?"off":""}"><input type="checkbox" data-pbv="${esc(m.view)}" data-pbk="${esc(k)}" ${lock||bb[k]!==0?"checked":""} ${dis} ${!lock&&!p.v?"disabled":""}>${esc(lbl)}</label>`).join("")}</div>` : '<span class="muted">-</span>';
+      rows.push(`<tr><td class="${m.group?"perm-sub":"pname"}">${esc(m.label)}</td><td class="center">${cb("v")}</td><td class="center">${cb("e")}</td><td class="center">${cb("d")}</td><td>${btns}</td></tr>`); });
     qPm('[data-body]').innerHTML=rows.join("");
+    qPm('[data-body]').querySelectorAll("[data-mixed]").forEach(c=>c.indeterminate=true);
     ["v","e","d"].forEach(k=>{ const all=ALL_VIEWS_P().every(m=> lock || (permDraft.p[m.view]||{})[k]); const h=qPm(`[data-col=${k}]`); h.checked=all; h.disabled=!!dis; });
   }
   qPm('[data-prole]').addEventListener("change",e=>{ permRoleId=e.target.value; permDraft=null; renderPerms(); });
-  qPm('[data-body]').addEventListener("change",e=>{ const c=e.target.closest("[data-pv]"); if(!c) return; const v=c.dataset.pv, k=c.dataset.k; const p=permDraft.p[v]=permDraft.p[v]||P(0,0,0);
+  qPm('[data-body]').addEventListener("change",e=>{ const g=e.target.closest("[data-pg]");
+    if(g){ const k=g.dataset.k, on=g.checked; ALL_VIEWS_P().filter(x=>x.group===g.dataset.pg).forEach(x=>{ const p=permDraft.p[x.view]=permDraft.p[x.view]||P(0,0,0); p[k]=on?1:0; if(k==="v"&&!on){p.e=0;p.d=0;} if(k!=="v"&&on) p.v=1; }); return renderPerms(); }
+    const pb=e.target.closest("[data-pbv]");
+    if(pb){ const p=permDraft.p[pb.dataset.pbv]=permDraft.p[pb.dataset.pbv]||P(0,0,0); p.b=p.b||{}; if(pb.checked) delete p.b[pb.dataset.pbk]; else p.b[pb.dataset.pbk]=0; return renderPerms(); }
+    const c=e.target.closest("[data-pv]"); if(!c) return; const v=c.dataset.pv, k=c.dataset.k; const p=permDraft.p[v]=permDraft.p[v]||P(0,0,0);
     p[k]=c.checked?1:0; if(k==="v"&&!c.checked){ p.e=0; p.d=0; } if(k!=="v"&&c.checked) p.v=1; renderPerms(); });
   secPm.querySelectorAll("[data-col]").forEach(h=>h.addEventListener("change",()=>{ const k=h.dataset.col; ALL_VIEWS_P().forEach(m=>{ const p=permDraft.p[m.view]=permDraft.p[m.view]||P(0,0,0); p[k]=h.checked?1:0; if(k==="v"&&!h.checked){p.e=0;p.d=0;} if(k!=="v"&&h.checked) p.v=1; }); renderPerms(); }));
-  secPm.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{ const t=b.dataset.preset; ALL_VIEWS_P().forEach(m=>permDraft.p[m.view]= t==="all"?P(1,1,1):t==="view"?P(1,0,0):P(0,0,0)); renderPerms(); }));
+  secPm.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{ const t=b.dataset.preset; ALL_VIEWS_P().forEach(m=>permDraft.p[m.view]= t==="all"?P(1,1,1):t==="view"?P(1,0,0):P(0,0,0)); renderPerms(); })); // ปุ่มลัดจะคืนค่าสิทธิ์รายปุ่มเป็นใช้ได้ทั้งหมด
   qPm('[data-psave]').addEventListener("click",async ()=>{
     const r=roleById(permRoleId); if(!r||r.id==="role-owner") return;
     const meRole=currentRole(); if(meRole && meRole.id===r.id && !(permDraft.p["set-perms"]||{}).e){ toast("ไม่สามารถเอาสิทธิ์จัดการสิทธิ์ออกจากบทบาทของตัวเองได้"); return; }
