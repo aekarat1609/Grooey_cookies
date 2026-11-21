@@ -161,11 +161,11 @@
   .pick-card .pimg{flex:none}
   .pick-card .pn{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(1.35em * 3);flex:none}
   .pick-card > .badge,.pick-card > :last-child{margin-top:auto;flex:none}
-  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:10px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
   .kpis.k4{grid-template-columns:repeat(4,1fr)}
   .kpis.k4 .kpi{border-left-color:#1F9D55}
   .kpi-s .plus,.kpi-s .low{font-weight:600}
-  @media (max-width:1500px){ .kpis{grid-template-columns:repeat(3,1fr)} }
+  @media (max-width:1100px){ .kpis{grid-template-columns:repeat(2,1fr)} }
   .kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-align:left;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:.15s;border-left:4px solid var(--orange)}
   .kpi:hover{box-shadow:0 4px 14px rgba(0,0,0,.08)}
   .kpi.warn{border-left-color:#E0A21B}
@@ -220,7 +220,7 @@
   .act-time{text-align:right;font-size:12.5px}
   .dash-tip{position:fixed;pointer-events:none;background:#222;color:#fff;font-size:12.5px;padding:5px 9px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:70;white-space:nowrap}
   @media (max-width:1024px){
-    .kpis{grid-template-columns:repeat(3,1fr)}
+    .kpis{grid-template-columns:repeat(2,1fr)}
     .dash-grid,.dash-grid.g3{grid-template-columns:1fr}
     .kpi-v{font-size:24px}
     .act-row{grid-template-columns:1fr auto;}
@@ -268,6 +268,13 @@
   .rc-semi .rc-tbl{width:100%}
   .cl-sum{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:14px;margin:0 2px}
   .cl-sum:empty{display:none}
+  .pd-item{border-bottom:0;flex-wrap:wrap}
+  .pd-f{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+  .modal .pd-f input{width:120px;text-align:right}
+  #mPD .table-card table{width:100%}
+  .pd-q{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
+  .modal .pd-q input{width:96px;text-align:right}
+  .pd-q span{min-width:52px;text-align:left}
   .up-step{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0}
   .up-file{display:flex;align-items:center;gap:10px;margin:4px 0 6px}
   .up-file label{cursor:pointer}
@@ -755,6 +762,7 @@
               <th class="num" style="width:110px">จำนวนรวม</th>
               <th class="num" style="width:120px">ยอดเงิน</th>
               <th class="note-h">หมายเหตุ</th>
+              <th style="width:130px">ผู้ดำเนินการ</th>
               <th class="center" style="width:120px">สถานะ</th>
               <th class="center" style="width:100px">ดำเนินการ</th>
             </tr></thead>
@@ -986,6 +994,23 @@
       <div class="err" id="soErr"></div>
     </div>
     <div class="modal-f"><button type="button" class="btn" data-close>ยกเลิก</button><button type="submit" class="btn green" id="soSave">สร้างการผลิต</button></div>
+  </form>
+</div>
+
+<!-- ===== Production finish ===== -->
+<div class="overlay" id="mPD">
+  <form class="modal" id="pdForm" style="max-width:720px" autocomplete="off">
+    <div class="modal-h"><span id="pdTitle">ผลิตเสร็จ</span><button type="button" class="x" data-close>&times;</button></div>
+    <div class="modal-b">
+      <div class="field"><label><span class="req">*</span> ผลผลิตที่ได้จริง</label><div class="sell-row pd-item" id="pdItem"></div></div>
+      <div class="field"><label>วัตถุดิบที่ใช้จริง <span class="muted" style="font-weight:400">(แก้ได้ถ้าใช้ไม่ตรงกับสูตร)</span></label>
+        <div class="table-card" style="border:1px solid #EEE;border-radius:8px"><table style="min-width:0;table-layout:auto">
+          <thead><tr><th>วัตถุดิบ</th><th class="num">ใช้จริง</th><th class="num">คงเหลือ</th><th class="center">สถานะ</th></tr></thead>
+          <tbody id="pdMats"></tbody></table></div></div>
+      <div class="field"><label>หมายเหตุ</label><input type="text" id="pdNote" maxlength="200" placeholder="เช่น เสีย 2 ชิ้นระหว่างอบ"></div>
+      <div class="err" id="pdErr"></div>
+    </div>
+    <div class="modal-f"><button type="button" class="btn" data-close>ยกเลิก</button><button type="submit" class="btn green" id="pdSave">ผลิตเสร็จ</button></div>
   </form>
 </div>
 
@@ -1228,6 +1253,10 @@
 
   async function save(key, id, data, noLog){
     const prev=(state.data[key]||[]).find(x=>x.id===id) || null;
+    if((key==="bills"||key==="prodOrders"||key==="semiOrders") && data){ try{ const u=currentUser(), nm=u ? (u.name||u.username||"") : (state.isOwner||!state.db ? "เจ้าของร้าน" : "");
+        if(!prev && data.by==null) data={...data, by:nm};
+        else if(prev && key!=="bills") data={...data, lastBy:nm}; }catch(e){} }
+    if((key==="moves"||key==="fgMoves") && !prev && data && data.by==null){ try{ const u=currentUser(); data={...data, by: u ? (u.name||u.username||"") : (state.isOwner||!state.db ? "เจ้าของร้าน" : "")}; }catch(e){} }
     if(state.db){ await state.db.collection(COL[key]).doc(id).set(data); }
     else {
       const arr=state.data[key], i=arr.findIndex(x=>x.id===id), row={...data,id};
@@ -1235,6 +1264,13 @@
       lsSave(key); renderAll();
     }
     if(!noLog && key!=="logs") writeLog(key, prev?"แก้ไข":"เพิ่ม", data, prev);
+  }
+  // ผู้ดำเนินการของรายการเคลื่อนไหว: ใช้ค่าที่บันทึกไว้ ถ้าเป็นรายการเก่าให้หาจากประวัติการใช้งาน
+  function moverOf(key, mv){
+    if(mv.by) return mv.by;
+    const L=(state.data.logs||[]); let best=null, bd=15000;
+    for(const l of L){ if(l.col!==key || l.action!=="เพิ่ม") continue; const d=Math.abs((l.at||0)-(mv.at||0)); if(d<bd && (!mv.name || String(l.detail||"").includes(mv.name))){ bd=d; best=l; } }
+    return best ? best.uname||"" : "";
   }
   async function remove(key, id, noLog){
     const prev=(state.data[key]||[]).find(x=>x.id===id) || null;
@@ -1468,8 +1504,8 @@
     }
     $("#total").textContent=rows.length.toLocaleString("th-TH");
     const dis=state.canWrite?"":"disabled";
-    $("#billBody").innerHTML = !(state.data.bills||[]).length ? `<tr><td colspan="9" class="empty-state">ยังไม่มีบิลขาย กด “เพิ่มรายการ” เพื่อขายสินค้า</td></tr>`
-      : !view.length ? `<tr><td colspan="9" class="empty-state">ไม่พบบิลในช่วงวันที่ / เงื่อนไขที่เลือก</td></tr>`
+    $("#billBody").innerHTML = !(state.data.bills||[]).length ? `<tr><td colspan="10" class="empty-state">ยังไม่มีบิลขาย กด “เพิ่มรายการ” เพื่อขายสินค้า</td></tr>`
+      : !view.length ? `<tr><td colspan="10" class="empty-state">ไม่พบบิลในช่วงวันที่ / เงื่อนไขที่เลือก</td></tr>`
       : view.map(b=>{ const vd=b.status==="void";
         const lines=(b.items||[]).map(x=>`<span>${esc(itemName(x.itemId)||x.name)}</span><span class="q">× ${fmtNum(x.qty)} ${esc(x.unit||"")} @ ${fmtBaht(lineP(x))}</span>`).join("");
         return `<tr class="${vd?"bill-void":""}">
@@ -1480,6 +1516,7 @@
           <td class="num">${(b.items||[]).length} รายการ</td>
           <td class="num"><b>${fmtBaht(billTotal(b))}</b></td>
           <td class="note">${esc(b.note||"")}${vd&&b.voidAt?`<div class="hint">ยกเลิกเมื่อ ${fmtDate(b.voidAt)}</div>`:""}</td>
+          <td class="muted">${esc(b.by||moverOf("bills",{at:b.at})||"-")}</td>
           <td class="center">${vd?'<span class="badge out">ยกเลิกแล้ว</span>':'<span class="badge ok">สำเร็จ</span>'}</td>
           <td><div class="acts">${vd?"":`<button class="icon-btn del" title="ยกเลิกบิล (คืนสต๊อก)" data-void="${esc(b.id)}" ${dis}>${ICON.del}</button>`}</div></td>
         </tr>`; }).join("");
@@ -1834,8 +1871,8 @@
   $("#btnDownload").addEventListener("click",()=>{
     const tab=state.ui.products.tab, [rf0,rt0]=saleRange();
     if(tab==="bills"){
-      const head=["เลขบิล","วันที่/เวลา","ช่องทางขาย","สินค้า","จำนวน","หน่วย","ราคาต่อหน่วย","ยอดเงิน","หมายเหตุ","สถานะ"];
-      const rows=[]; billsFiltered().forEach(b=>(b.items||[]).forEach(x=>rows.push([b.no, fmtDate(b.at), b.channel||"ไม่ระบุ", itemName(x.itemId)||x.name, round3(x.qty), x.unit||"", lineP(x), Math.round((Number(x.qty)||0)*lineP(x)*100)/100, b.note||"", b.status==="void"?"ยกเลิกแล้ว":"สำเร็จ"])));
+      const head=["เลขบิล","วันที่/เวลา","ช่องทางขาย","สินค้า","จำนวน","หน่วย","ราคาต่อหน่วย","ยอดเงิน","หมายเหตุ","ผู้ดำเนินการ","สถานะ"];
+      const rows=[]; billsFiltered().forEach(b=>(b.items||[]).forEach(x=>rows.push([b.no, fmtDate(b.at), b.channel||"ไม่ระบุ", itemName(x.itemId)||x.name, round3(x.qty), x.unit||"", lineP(x), Math.round((Number(x.qty)||0)*lineP(x)*100)/100, b.note||"", b.by||moverOf("bills",{at:b.at})||"", b.status==="void"?"ยกเลิกแล้ว":"สำเร็จ"])));
       return downloadCsv(`sales_bills_${rf0||"all"}_${rt0||todayStr()}.csv`, buildCsv(head, rows));
     }
     if(tab==="report"){
@@ -1989,7 +2026,7 @@
     });
 
     /* ----- IN / OUT ----- */
-    const colsM = cfg.loc ? 10 : 8;
+    const colsM = cfg.loc ? 11 : 9;
     const mvOf = mv => byId(mv.itemId || mv.materialId);
     const mvViews = {};
     function makeMv(T, grp, keep, keepGone, pickLbl, needLbl){
@@ -2020,6 +2057,7 @@
                 ${cfg.loc ? '<th class="center">ตู้</th><th class="center">ชั้น</th>' : ''}
                 <th class="num need-h">${needLbl||cfg.needLabel} <span class="sub">(ปัจจุบัน)</span></th>
                 <th class="note-h">หมายเหตุ</th>
+                <th>ผู้ดำเนินการ</th>
                 <th class="upd-h">เวลาอัปเดทล่าสุด</th>
                 <th class="center" style="width:90px">ดำเนินการ</th>
               </tr></thead>
@@ -2066,6 +2104,7 @@
               ${cfg.loc ? `<td class="center">${chip(m?m.cabinet:"")}</td><td class="center">${chip(m?m.shelf:"")}</td>` : ''}
               <td class="num">${needCell(m?need(m):null)}</td>
               <td class="note">${esc(mv.note||"")}</td>
+              <td class="muted">${esc(moverOf(cfg.moves, mv)||"-")}</td>
               <td class="muted upd">${fmtDate(mv.at)}</td>
               <td><div class="acts"><button class="icon-btn del" title="ลบ" data-act="delmv" data-id="${esc(mv.id)}" ${m?dis:"disabled"}>${ICON.del}</button></div></td>
             </tr>`;
@@ -2082,8 +2121,8 @@
         canPick:it=>state.canWrite && (t.type==="in" || (Number(it.qty)||0)>0),
         onNext:list=>openMove(mod, t.type, list.map(x=>x.id), {keep, title:t.title}) }));
       q('[data-download]').addEventListener("click",()=>{
-        const head=["ชื่อสินค้า",cfg.mvQtyLabel,"หน่วยนับ","หมายเหตุ","เวลา"];
-        const rows=filtered().map(mv=>[mv.name, (t.type==="out"?-1:1)*round3(mv.qty), mv.unit, mv.note||"", fmtDate(mv.at)]);
+        const head=["ชื่อสินค้า",cfg.mvQtyLabel,"หน่วยนับ","หมายเหตุ","ผู้ดำเนินการ","เวลา"];
+        const rows=filtered().map(mv=>[mv.name, (t.type==="out"?-1:1)*round3(mv.qty), mv.unit, mv.note||"", moverOf(cfg.moves, mv), fmtDate(mv.at)]);
         downloadCsv(`${cfg.csv}_${t.type}_${todayStr()}.csv`, buildCsv(head, rows));
       });
       q('[data-perpage]').addEventListener("change",e=>{ ui.perPage=+e.target.value; ui.page=1; render(); });
@@ -2106,7 +2145,7 @@
     const cItems = () => items().filter(keep);
     const uiC = { filter:{name:"",unit:"",cab:"",shelf:"",status:""}, page:1, perPage:20 };
     const draft = {};                       // id -> counted value (string) typed but not saved yet
-    const colsC = cfg.loc ? 11 : 9;
+    const colsC = cfg.loc ? 12 : 10;
     const secC = $(`#view-${cView}`);
     secC.innerHTML = `
       <div class="content">
@@ -2137,6 +2176,7 @@
               <th class="num">ส่วนต่าง</th>
               <th class="center" style="width:130px">สถานะ</th>
               <th class="upd-h">ตรวจนับล่าสุด</th>
+              <th style="width:150px;min-width:150px;white-space:nowrap">ผู้ดำเนินการล่าสุด</th>
               <th class="center" style="width:90px">ดำเนินการ</th>
             </tr></thead>
             <tbody data-body><tr><td colspan="${colsC}" class="empty-state">กำลังโหลดข้อมูล…</td></tr></tbody>
@@ -2147,6 +2187,8 @@
       ${footerHtml}`;
     const qC = s => secC.querySelector(s);
     const countedToday = countedThisWeek;
+    const lastCounter = m => { if(m.countedBy) return m.countedBy; if(!m.countedAt) return "";
+      const mv=moves().filter(x=>x.type==="count" && x.itemId===m.id).sort((a,b)=>(b.at||0)-(a.at||0))[0]; return mv ? moverOf(cfg.moves, mv) : ""; };
     const diffHtml = (sys, val) => {
       if(val===undefined || val==="" ) return '<span class="muted">-</span>';
       const d=round3(Number(val)-sys);
@@ -2185,6 +2227,7 @@
             <td class="num" data-diff>${diffHtml(sys, val)}</td>
             <td class="center">${countedToday(m)?'<span class="badge ok">ตรวจนับแล้ว</span>':'<span class="badge lowb">ยังไม่ตรวจนับ</span>'}</td>
             <td class="muted upd">${m.countedAt ? fmtDate(m.countedAt) : "-"}</td>
+            <td class="muted">${esc(lastCounter(m)||"-")}</td>
             <td><div class="acts"><button class="icon-btn in" title="บันทึกผลตรวจนับ" data-act="savecount" data-id="${esc(m.id)}" ${dis}>${ICON.check}</button></div></td>
           </tr>`;
         }).join("");
@@ -2195,7 +2238,8 @@
       const now=Date.now(), sys=round3(m.qty), diff=round3(counted-sys);
       if(diff!==0){ const u=(typeof sessionUser==="function" && sessionUser()) || null;
         await save(cfg.moves, newId("cnt"), { type:"count", itemId:m.id, name:m.name, unit:m.unit, qty:Math.abs(diff), diff, before:sys, after:counted, note:"ตรวจนับสต๊อก", at:now, by:u?(u.name||u.username||""):"", semi:!!m.semi }); }
-      await save(cfg.items, m.id, {...stripId(m), qty:counted, countedAt:now, countedQty:counted, updatedAt:now});
+      let who=""; try{ const u=currentUser(); who = u ? (u.name||u.username||"") : (state.isOwner||!state.db ? "เจ้าของร้าน" : ""); }catch(e){}
+      await save(cfg.items, m.id, {...stripId(m), qty:counted, countedAt:now, countedQty:counted, countedBy:who, updatedAt:now});
       delete draft[m.id];
     }
     const readDraft = id => { const v=draft[id]; if(v===undefined||v==="") return null; const n=round3(v); return (isFinite(n)&&n>=0)?n:NaN; };
@@ -2224,9 +2268,9 @@
     qC('[data-perpage]').addEventListener("change",e=>{ uiC.perPage=+e.target.value; uiC.page=1; renderC(); });
     qC('[data-pager]').addEventListener("click",e=>{ const b=e.target.closest("button[data-p]"); if(!b||b.disabled) return; uiC.page=+b.dataset.p; renderC(); });
     qC('[data-download]').addEventListener("click",()=>{
-      const head=["ชื่อสินค้า","หน่วยนับ"].concat(cfg.loc?["สินค้าอยู่ตู้ที่","สินค้าอยู่ชั้นที่"]:[]).concat(["จำนวนในระบบ","จำนวนที่นับได้","ส่วนต่าง","สถานะ","ตรวจนับล่าสุด"]);
+      const head=["ชื่อสินค้า","หน่วยนับ"].concat(cfg.loc?["สินค้าอยู่ตู้ที่","สินค้าอยู่ชั้นที่"]:[]).concat(["จำนวนในระบบ","จำนวนที่นับได้","ส่วนต่าง","สถานะ","ตรวจนับล่าสุด","ผู้ดำเนินการล่าสุด"]);
       const rows=filteredC().map(m=>{ const n=readDraft(m.id), sys=round3(m.qty);
-        return [m.name,m.unit].concat(cfg.loc?[m.cabinet||"",m.shelf||""]:[]).concat([sys, n===null||Number.isNaN(n)?"":n, n===null||Number.isNaN(n)?"":round3(n-sys), countedThisWeek(m)?"ตรวจนับแล้ว":"ยังไม่ตรวจนับ", m.countedAt?fmtDate(m.countedAt):""]); });
+        return [m.name,m.unit].concat(cfg.loc?[m.cabinet||"",m.shelf||""]:[]).concat([sys, n===null||Number.isNaN(n)?"":n, n===null||Number.isNaN(n)?"":round3(n-sys), countedThisWeek(m)?"ตรวจนับแล้ว":"ยังไม่ตรวจนับ", m.countedAt?fmtDate(m.countedAt):"", lastCounter(m)]); });
       downloadCsv(`count_${cfg.csv}_${todayStr()}.csv`, buildCsv(head, rows));
     });
     qC('[data-saveall]').addEventListener("click",()=>{
@@ -2521,7 +2565,9 @@
     const mat=MODS[0], fg=MODS[1];
     const {cols:days, monthly}=salesBuckets();
     const fgNeed=fg.items().filter(m=>fg.need(m)>0), fgOut=fg.items().filter(m=>(Number(m.qty)||0)<=0);
-    const matNeed=mat.items().filter(m=>mat.need(m)>0), matOut=mat.items().filter(m=>(Number(m.qty)||0)<=0);
+    const rawItems=mat.items().filter(m=>!m.semi), semiAll=mat.items().filter(m=>m.semi);
+    const matNeed=rawItems.filter(m=>mat.need(m)>0), matOut=rawItems.filter(m=>(Number(m.qty)||0)<=0);
+    const semiNeed=semiAll.filter(m=>mat.need(m)>0), semiOut=semiAll.filter(m=>(Number(m.qty)||0)<=0);
     const allItems=fg.items().length+mat.items().length;
     const counted=[...fg.items(),...mat.items()].filter(countedThisWeek).length;
 
@@ -2582,13 +2628,13 @@
     const TYPE = { in:["plus","+"], out:["minus","−"] };
     const acts=[
       ...state.data.fgMoves.map(mv=>({mv, mod:fg})),
-      ...state.data.moves.map(mv=>({mv, mod:mat}))
+      ...state.data.moves.map(mv=>{ const m=mat.byId(mv.itemId); return {mv, mod:mat, semi: m?!!m.semi:!!mv.semi}; })
     ].filter(x=>(x.mv.type==="in"||x.mv.type==="out") && inDash(x.mv.at)).sort((a,b)=>(b.mv.at||0)-(a.mv.at||0)).slice(0,8);
     const actHtml = !acts.length ? '<div class="dash-empty">ไม่มีความเคลื่อนไหวในช่วงเวลาที่เลือก</div>'
-      : acts.map(({mv,mod})=>{
-        const label = mv.sale ? "ขายสินค้า" : mod.MV[mv.type].title, [cls,sign]=TYPE[mv.type];
+      : acts.map(({mv,mod,semi})=>{
+        const label = mv.sale ? "ขายสินค้า" : semi ? (mv.type==="in"?"นำเข้า":"นำออก&เสียหาย") : mod.MV[mv.type].title, [cls,sign]=TYPE[mv.type];
         return `<div class="act-row">
-          <span class="chip">${esc(mod.cfg.key==="fg"?"สินค้าสำเร็จรูป":"วัตถุดิบ")}</span>
+          <span class="chip">${esc(mod.cfg.key==="fg"?"สินค้าสำเร็จรูป":semi?"วัตถุดิบสำเร็จรูป":"วัตถุดิบ")}</span>
           <div class="act-main"><b>${esc(label)}</b> ${esc(mv.name||"")}${mv.note&&!mv.sale?` <span class="muted">• ${esc(mv.note)}</span>`:""}</div>
           <div class="${cls}" style="white-space:nowrap">${sign}${fmtNum(mv.qty)} ${esc(mv.unit||"")}</div>
           <div class="muted act-time">${fmtDate(mv.at)}</div>
@@ -2599,6 +2645,12 @@
     const POs=state.data.prodOrders||[], today=todayStr();
     const poTodo=POs.filter(o=>(o.status||"todo")==="todo"), poDoing=POs.filter(o=>o.status==="doing");
     const poDoneToday=POs.filter(o=>o.status==="done" && inDash(o.doneAt||o.updatedAt));
+    const SOs=state.data.semiOrders||[], soOpen=SOs.filter(o=>o.status!=="done"), soTodo=soOpen.filter(o=>(o.status||"todo")==="todo"), soDoing=soOpen.filter(o=>o.status==="doing");
+    const soDone=SOs.filter(o=>o.status==="done" && inDash(o.doneAt||o.updatedAt));
+    // count differences in range
+    const cntDiff=[...state.data.moves.map(mv=>({mv, cost:(()=>{ const m=mat.byId(mv.itemId); return m?avgCost(m):0; })(), mod:"mat"})), ...state.data.fgMoves.map(mv=>({mv, cost:(()=>{ const m=fg.byId(mv.itemId); return m?Number(m.price)||0:0; })(), mod:"fg"}))]
+      .filter(x=>x.mv.type==="count" && round3(x.mv.diff) && inDash(x.mv.at)).sort((a,b)=>(b.mv.at||0)-(a.mv.at||0));
+    const cntVal=cntDiff.reduce((a,x)=>a+Number(x.mv.diff)*x.cost,0);
     const unitSum = list => { const u={}; list.forEach(o=>{ const k=o.unit||"ชิ้น"; u[k]=round3((u[k]||0)+(Number(o.yield)||0)); }); const e=Object.entries(u); return e.length?e.map(([k,v])=>`${fmtNum(v)} ${esc(k)}`).join(" • "):"-"; };
     const PSTAT = { todo:["lowb","รอผลิต"], doing:["info","กำลังผลิต"], done:["ok","ผลิตเสร็จ"] };
     const active=[...poDoing,...poTodo.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))];
@@ -2608,30 +2660,42 @@
         <div class="mini-main"><div class="pname">${esc(it?it.name:o.name)}</div><div class="muted">${fmtNum(o.rounds)} รอบ • จะได้ ${fmtNum(o.yield)} ${esc(o.unit||"")}${o.note?` • ${esc(o.note)}`:""}</div></div>
         <span class="badge ${st[0]}">${st[1]}</span>
       </div>`; };
-    const doneRow = o => { const it=FG().byId(o.itemId);
+    const doneRow = o => { const semi=o._semi, it=semi?mat.byId(o.itemId):FG().byId(o.itemId);
       return `<div class="mini-row">
         ${thumb(it?it.image:"", it?it.name:o.name)}
-        <div class="mini-main"><div class="pname">${esc(it?it.name:o.name)}</div><div class="muted">${fmtNum(o.rounds)} รอบ • เสร็จ ${fmtDate(o.doneAt||o.updatedAt)}</div></div>
+        <div class="mini-main"><div class="pname">${esc(it?it.name:o.name)}</div><div class="muted">${semi?"วัตถุดิบสำเร็จรูป":"คุกกี้"} • ${fmtNum(o.rounds)} รอบ • เสร็จ ${fmtDate(o.doneAt||o.updatedAt)}</div></div>
         <div class="mini-need"><span class="plus">+${fmtNum(o.yield)}</span><div class="muted">${esc(o.unit||"")}</div></div>
       </div>`; };
     const activeHtml = !active.length ? '<div class="dash-empty">ไม่มีรายการที่รอผลิต</div>'
       : active.slice(0,6).map(poRow).join("") + (active.length>6?`<div class="muted" style="padding:8px 4px 0">และอีก ${active.length-6} รายการ</div>`:"");
-    const doneHtml = !poDoneToday.length ? '<div class="dash-empty">ไม่มีรายการผลิตเสร็จในช่วงเวลาที่เลือก</div>'
-      : poDoneToday.sort((a,b)=>(b.doneAt||0)-(a.doneAt||0)).slice(0,6).map(doneRow).join("") + (poDoneToday.length>6?`<div class="muted" style="padding:8px 4px 0">และอีก ${poDoneToday.length-6} รายการ</div>`:"");
+    const doneAll=[...poDoneToday, ...soDone.map(o=>({...o,_semi:true}))].sort((a,b)=>(b.doneAt||b.updatedAt||0)-(a.doneAt||a.updatedAt||0));
+    const doneHtml = !doneAll.length ? '<div class="dash-empty">ไม่มีรายการผลิตเสร็จในช่วงเวลาที่เลือก</div>'
+      : doneAll.slice(0,6).map(doneRow).join("") + (doneAll.length>6?`<div class="muted" style="padding:8px 4px 0">และอีก ${doneAll.length-6} รายการ</div>`:"");
+    const cntHtml = !cntDiff.length ? '<div class="dash-empty">ไม่มีส่วนต่างจากการตรวจนับในช่วงเวลาที่เลือก</div>'
+      : cntDiff.slice(0,6).map(({mv,cost})=>{ const d=round3(mv.diff), v=d*cost; return `<div class="mini-row">
+          <div class="mini-main"><div class="pname">${esc(mv.name||"")}</div><div class="muted">${fmtNum(mv.before)} → ${fmtNum(mv.after)} ${esc(mv.unit||"")} • ${fmtDate(mv.at)}${mv.by?` • ${esc(mv.by)}`:""}</div></div>
+          <div class="mini-need"><span class="${d>0?"plus":"low"}">${d>0?"+":"−"}${fmtNum(Math.abs(d))}</span><div class="muted">${cost?`${v<0?"−":"+"}${bahtShort(Math.abs(v))}`:esc(mv.unit||"")}</div></div>
+        </div>`; }).join("") + (cntDiff.length>6?`<div class="muted" style="padding:8px 4px 0">และอีก ${cntDiff.length-6} รายการ</div>`:"");
     const prodHtml = `
           <div class="card dash-card">
             <div class="dash-h"><span>ผลิตเสร็จ <span class="muted">(${esc(rLbl)})</span></span><a class="dash-link" data-go="prod-create">ดูทั้งหมด ›</a></div>
             ${doneHtml}
+          </div>
+          <div class="card dash-card">
+            <div class="dash-h"><span>ส่วนต่างตรวจนับ <span class="muted">(${esc(rLbl)})</span></span><a class="dash-link" data-go="count-log">ดูประวัติ ›</a></div>
+            ${cntHtml}
           </div>`;
 
     sec.innerHTML = `
         <div class="kpis">
           ${tile("สินค้าสำเร็จรูปต้องทำเพิ่ม", `${fgNeed.length} <small>รายการ</small>`, fgOut.length?`หมดแล้ว ${fgOut.length} รายการ`:"ไม่มีสินค้าหมด", "finished", fgNeed.length?"warn":"")}
           ${tile("วัตถุดิบต้องซื้อเพิ่ม", `${matNeed.length} <small>รายการ</small>`, matOut.length?`หมดแล้ว ${matOut.length} รายการ`:"ไม่มีวัตถุดิบหมด", "materials", matNeed.length?"warn":"")}
+          ${tile("วัตถุดิบสำเร็จรูปต้องทำเพิ่ม", `${semiNeed.length} <small>รายการ</small>`, !semiAll.length?"ยังไม่มีวัตถุดิบสำเร็จรูป":semiOut.length?`หมดแล้ว ${semiOut.length} รายการ`:"ไม่มีรายการหมด", "semi-list", semiNeed.length?"warn":"")}
           ${tile(isCountDay()?"ตรวจนับ (วันนี้วันจันทร์)":"ตรวจนับสัปดาห์นี้", `${counted}<small>/${allItems}</small>`, counted>=allItems&&allItems?"นับครบแล้วสำหรับสัปดาห์นี้":`ยังไม่นับ ${allItems-counted} รายการ`, "fg-count", isCountDay()&&counted<allItems?"warn":"")}
-          ${tile("รอผลิต", `${poTodo.length} <small>รายการ</small>`, `จะได้ ${unitSum(poTodo)}`, "prod-create")}
-          ${tile("กำลังผลิต", `${poDoing.length} <small>รายการ</small>`, `จะได้ ${unitSum(poDoing)}`, "prod-create")}
-          ${tile("ผลิตเสร็จ (ช่วงที่เลือก)", `${poDoneToday.length} <small>รายการ</small>`, `ได้ ${unitSum(poDoneToday)}`, "prod-create")}
+          ${tile("ผลิตคุกกี้ค้าง", `${poTodo.length+poDoing.length} <small>รายการ</small>`, `รอผลิต ${poTodo.length} • กำลังผลิต ${poDoing.length}`, "prod-create")}
+          ${tile("ผลิตวัตถุดิบสำเร็จรูปค้าง", `${soOpen.length} <small>รายการ</small>`, `รอผลิต ${soTodo.length} • กำลังผลิต ${soDoing.length}`, "semi-prod")}
+          ${tile("ผลิตเสร็จ (ช่วงที่เลือก)", `${poDoneToday.length+soDone.length} <small>รายการ</small>`, [poDoneToday.length?`คุกกี้ ${unitSum(poDoneToday)}`:"", soDone.length?`วัตถุดิบสำเร็จรูป ${soDone.length} รายการ`:""].filter(Boolean).join(" • ")||"ยังไม่มีรายการผลิตเสร็จ", "prod-create")}
+          ${tile("ส่วนต่างตรวจนับ (ช่วงที่เลือก)", `${cntDiff.length} <small>รายการ</small>`, cntDiff.length?`มูลค่าสุทธิ ${cntVal<0?"−":"+"}${bahtShort(Math.abs(cntVal))}`:"ไม่มีส่วนต่าง", "count-log", cntDiff.length?"warn":"")}
         </div>
         <div class="dash-grid g3">
           <div class="card dash-card">
@@ -2656,6 +2720,12 @@
             <div class="dash-h"><span>วัตถุดิบที่ต้องซื้อ</span><a class="dash-link" data-go="materials">ดูทั้งหมด ›</a></div>
             ${needList(mat, matNeed, "วัตถุดิบเพียงพอทุกรายการ")}
           </div>
+          <div class="card dash-card">
+            <div class="dash-h"><span>วัตถุดิบสำเร็จรูปที่ต้องทำเพิ่ม</span><a class="dash-link" data-go="semi-list">ดูทั้งหมด ›</a></div>
+            ${needList(mat, semiNeed, semiAll.length?"วัตถุดิบสำเร็จรูปเพียงพอทุกรายการ":"ยังไม่มีวัตถุดิบสำเร็จรูป")}
+          </div>
+        </div>
+        <div class="dash-grid">
           ${prodHtml}
         </div>
         <div class="dash-grid">
@@ -3273,6 +3343,7 @@
             <th class="num" style="width:130px">จำนวนที่จะได้</th>
             <th class="po-mats-h">วัตถุดิบที่ต้องใช้</th>
             <th class="center" style="width:120px">สถานะ</th>
+            <th style="width:130px">ผู้ดำเนินการ</th>
             <th class="upd-h">เวลาอัปเดทล่าสุด</th>
             <th class="center" style="width:110px">ดำเนินการ</th>
           </tr></thead>
@@ -3305,8 +3376,8 @@
     const rows=poRows(), {view,pages}=paginate(rows,uiPO);
     qPO('[data-total]').textContent=rows.length.toLocaleString("th-TH");
     const dis=state.canWrite?"":"disabled";
-    qPO('[data-body]').innerHTML = !state.data.prodOrders.length ? `<tr><td colspan="8" class="empty-state">ยังไม่มีรายการผลิต กด “เพิ่มรายการ” เพื่อสร้าง</td></tr>`
-      : !view.length ? `<tr><td colspan="8" class="empty-state">ไม่มีรายการ${(PO_ST[uiPO.tab]||PO_ST.todo)[1]}${uiPO.filter.name||uiPO.filter.from||uiPO.filter.to?"ที่ตรงกับการค้นหา":""}</td></tr>`
+    qPO('[data-body]').innerHTML = !state.data.prodOrders.length ? `<tr><td colspan="9" class="empty-state">ยังไม่มีรายการผลิต กด “เพิ่มรายการ” เพื่อสร้าง</td></tr>`
+      : !view.length ? `<tr><td colspan="9" class="empty-state">ไม่มีรายการ${(PO_ST[uiPO.tab]||PO_ST.todo)[1]}${uiPO.filter.name||uiPO.filter.from||uiPO.filter.to?"ที่ตรงกับการค้นหา":""}</td></tr>`
       : view.map(o=>{ const it=FG().byId(o.itemId), st=o.status||"todo";
         const mats=(o.mats||[]).map(x=>{ const m=MAT().byId(x.matId); return `<span>${esc(m?m.name:x.name)}</span><span class="q">${fmtNum(x.qty)} ${esc(m?m.unit:x.unit)}</span>`; }).join("");
         const act = st==="todo" ? `<button class="icon-btn edit" title="เริ่มผลิต" data-act="start" data-id="${esc(o.id)}" ${dis}>${PLAY}</button>`
@@ -3318,6 +3389,7 @@
           <td class="num">${fmtNum(o.yield)} ${esc(o.unit||"")}</td>
           <td>${mats?`<div class="po-mats">${mats}</div>`:'<span class="muted">-</span>'}</td>
           <td class="center">${poBadge(o)}</td>
+          <td class="muted">${esc(o.lastBy||o.by||moverOf("prodOrders",{at:o.createdAt,name:o.name})||"-")}</td>
           <td class="muted upd">${fmtDate(o.updatedAt)}</td>
           <td><div class="acts">${act}<button class="icon-btn del" title="ลบ" data-act="del" data-id="${esc(o.id)}" ${st==="done"?"disabled":dis}>${ICON.del}</button></div></td>
         </tr>`; }).join("");
@@ -3333,8 +3405,8 @@
   qPO('[data-add]').addEventListener("click",pickForProduction);
   qPO('[data-tabs]').addEventListener("click",e=>{ const b=e.target.closest("[data-tab]"); if(!b) return; uiPO.tab=b.dataset.tab; uiPO.page=1; renderPOList(); });
   qPO('[data-download]').addEventListener("click",()=>{
-    const head=["ชื่อสินค้า","จำนวนรอบ","จำนวนที่จะได้","หน่วยนับ","วัตถุดิบที่ต้องใช้","สถานะ","หมายเหตุ","วันที่สร้าง","เวลาอัปเดทล่าสุด"];
-    const rows=poRows().map(o=>[o.name, round3(o.rounds), round3(o.yield), o.unit, (o.mats||[]).map(x=>`${x.name} ${round3(x.qty)} ${x.unit}`).join(", "), (PO_ST[o.status]||PO_ST.todo)[1], o.note||"", fmtDate(o.createdAt), fmtDate(o.updatedAt)]);
+    const head=["ชื่อสินค้า","จำนวนรอบ","จำนวนที่จะได้","หน่วยนับ","วัตถุดิบที่ต้องใช้","สถานะ","หมายเหตุ","ผู้ดำเนินการ","วันที่สร้าง","เวลาอัปเดทล่าสุด"];
+    const rows=poRows().map(o=>[o.name, round3(o.rounds), round3(o.yield), o.unit, (o.mats||[]).map(x=>`${x.name} ${round3(x.qty)} ${x.unit}`).join(", "), (PO_ST[o.status]||PO_ST.todo)[1], o.note||"", o.lastBy||o.by||"", fmtDate(o.createdAt), fmtDate(o.updatedAt)]);
     downloadCsv(`production_${todayStr()}.csv`, buildCsv(head, rows));
   });
   qPO('[data-body]').addEventListener("click",e=>{
@@ -3342,25 +3414,7 @@
     const o=state.data.prodOrders.find(x=>x.id===b.dataset.id); if(!o) return;
     const a=b.dataset.act;
     if(a==="start") save("prodOrders", o.id, {...stripId(o), status:"doing", startedAt:Date.now(), updatedAt:Date.now()}).then(()=>toast(`เริ่มผลิต ${o.name} แล้ว`)).catch(err=>toast(errMsg(err)));
-    if(a==="done"){
-      const it=FG().byId(o.itemId); if(!it) return;
-      const lines=(o.mats||[]).map(x=>{ const m=MAT().byId(x.matId); return `${esc(m?m.name:x.name)} −${fmtNum(x.qty)} ${esc(m?m.unit:x.unit)}`; }).join(", ");
-      confirmBox("ผลิตเสร็จ", `ผลิต <b>${esc(it.name)} ${fmtNum(o.yield)} ${esc(it.unit||"")}</b> เสร็จแล้วใช่หรือไม่?<div class="hint" style="margin-top:6px">ระบบจะเพิ่มคุกกี้เข้าสต๊อก: ${fmtNum(it.qty)} → ${fmtNum(round3(round3(it.qty)+round3(o.yield)))} ${esc(it.unit||"")}<br>และตัดวัตถุดิบ: ${lines||"-"}</div>`, "ผลิตเสร็จ", async ()=>{
-        for(const x of (o.mats||[])){ const m=MAT().byId(x.matId);
-          if(!m){ const er=new Error(); er.userMsg=`ไม่พบวัตถุดิบ ${x.name}`; throw er; }
-          if(round3(x.qty)>round3(m.qty)){ const er=new Error(); er.userMsg=`${m.name} คงเหลือไม่พอ (เหลือ ${fmtNum(m.qty)} ${m.unit})`; throw er; } }
-        const now=Date.now(), tag=`ผลิต ${it.name} ${fmtNum(o.rounds)} รอบ`+(o.note?` • ${o.note}`:"");
-        for(const x of (o.mats||[])){ const m=MAT().byId(x.matId), n=round3(x.qty);
-          await save("moves", newId("mv"), { type:"out", itemId:m.id, name:m.name, unit:m.unit, qty:n, note:tag, at:now });
-          await save("materials", m.id, {...stripId(m), qty:round3(round3(m.qty)-n), updatedAt:now}); }
-        const cur=FG().byId(o.itemId), y=round3(o.yield);
-        await save("fgMoves", newId("fmv"), { type:"in", itemId:cur.id, name:cur.name, unit:cur.unit, qty:y, note:tag, at:now });
-        await save("finished", cur.id, {...stripId(cur), qty:round3(round3(cur.qty)+y), updatedAt:now});
-        await save("prodOrders", o.id, {...stripId(o), status:"done", doneAt:now, updatedAt:now});
-        toast(`เพิ่ม ${cur.name} ${fmtNum(y)} ${cur.unit||""} เข้าสต๊อกแล้ว`);
-      });
-      $("#cfOk").className="btn green";
-    }
+    if(a==="done") openFinish("po", o);
     if(a==="del") confirmBox("ลบรายการ", `ต้องการลบรายการผลิต <b>${esc(o.name)} ${fmtNum(o.rounds)} รอบ</b> ใช่หรือไม่?`, "ลบ", async ()=>{ await remove("prodOrders", o.id); toast("ลบรายการแล้ว"); });
   });
 
@@ -3619,6 +3673,7 @@
             <th class="num" style="width:130px">จำนวนที่จะได้</th>
             <th class="po-mats-h">วัตถุดิบที่ต้องใช้</th>
             <th class="center" style="width:120px">สถานะ</th>
+            <th style="width:130px">ผู้ดำเนินการ</th>
             <th class="upd-h">เวลาอัปเดทล่าสุด</th>
             <th class="center" style="width:110px">ดำเนินการ</th>
           </tr></thead>
@@ -3642,8 +3697,8 @@
     secSO.querySelectorAll("[data-tab]").forEach(b=>{ const on=b.dataset.tab===uiSO.tab; b.classList.toggle("on",on); b.setAttribute("aria-selected",on); });
     const rows=soRows(), {view,pages}=paginate(rows,uiSO), dis=state.canWrite?"":"disabled";
     qSO('[data-total]').textContent=rows.length.toLocaleString("th-TH");
-    qSO('[data-body]').innerHTML = !all.length ? `<tr><td colspan="7" class="empty-state">ยังไม่มีรายการผลิต กด “เพิ่มรายการ” เพื่อสร้าง</td></tr>`
-      : !view.length ? `<tr><td colspan="7" class="empty-state">ไม่มีรายการ${(PO_ST[uiSO.tab]||PO_ST.todo)[1]}${uiSO.filter.name||uiSO.filter.from||uiSO.filter.to?"ที่ตรงกับการค้นหา":""}</td></tr>`
+    qSO('[data-body]').innerHTML = !all.length ? `<tr><td colspan="8" class="empty-state">ยังไม่มีรายการผลิต กด “เพิ่มรายการ” เพื่อสร้าง</td></tr>`
+      : !view.length ? `<tr><td colspan="8" class="empty-state">ไม่มีรายการ${(PO_ST[uiSO.tab]||PO_ST.todo)[1]}${uiSO.filter.name||uiSO.filter.from||uiSO.filter.to?"ที่ตรงกับการค้นหา":""}</td></tr>`
       : view.map(o=>{ const m=SEMI.byId(o.itemId), st=o.status||"todo";
         const mats=(o.mats||[]).map(x=>{ const r=MAT().byId(x.matId); return `<span>${esc(r?r.name:x.name)}</span><span class="q">${fmtNum(x.qty)} ${esc(r?r.unit:x.unit)}</span>`; }).join("");
         const act = st==="todo" ? `<button class="icon-btn edit" title="เริ่มผลิต" data-act="start" data-id="${esc(o.id)}" ${dis}>${PLAY}</button>`
@@ -3654,6 +3709,7 @@
           <td class="num">${fmtNum(o.yield)} ${esc(o.unit||"")}</td>
           <td>${mats?`<div class="po-mats">${mats}</div>`:'<span class="muted">-</span>'}</td>
           <td class="center">${poBadge(o)}</td>
+          <td class="muted">${esc(o.lastBy||o.by||moverOf("semiOrders",{at:o.createdAt,name:o.name})||"-")}</td>
           <td class="muted upd">${fmtDate(o.updatedAt)}</td>
           <td><div class="acts">${act}<button class="icon-btn del" title="ลบ" data-act="del" data-id="${esc(o.id)}" ${st==="done"?"disabled":dis}>${ICON.del}</button></div></td>
         </tr>`; }).join("");
@@ -3668,8 +3724,8 @@
   qSO('[data-add]').addEventListener("click",pickForSemi);
   qSO('[data-tabs]').addEventListener("click",e=>{ const b=e.target.closest("[data-tab]"); if(!b) return; uiSO.tab=b.dataset.tab; uiSO.page=1; renderSOList(); });
   qSO('[data-download]').addEventListener("click",()=>{
-    const head=["ชื่อวัตถุดิบสำเร็จรูป","จำนวนรอบ","จำนวนที่จะได้","หน่วยนับ","วัตถุดิบที่ต้องใช้","สถานะ","หมายเหตุ","วันที่สร้าง","เวลาอัปเดทล่าสุด"];
-    const rows=soRows().map(o=>[o.name, round3(o.rounds), round3(o.yield), o.unit, (o.mats||[]).map(x=>`${x.name} ${round3(x.qty)} ${x.unit}`).join(", "), (PO_ST[o.status]||PO_ST.todo)[1], o.note||"", fmtDate(o.createdAt), fmtDate(o.updatedAt)]);
+    const head=["ชื่อวัตถุดิบสำเร็จรูป","จำนวนรอบ","จำนวนที่จะได้","หน่วยนับ","วัตถุดิบที่ต้องใช้","สถานะ","หมายเหตุ","ผู้ดำเนินการ","วันที่สร้าง","เวลาอัปเดทล่าสุด"];
+    const rows=soRows().map(o=>[o.name, round3(o.rounds), round3(o.yield), o.unit, (o.mats||[]).map(x=>`${x.name} ${round3(x.qty)} ${x.unit}`).join(", "), (PO_ST[o.status]||PO_ST.todo)[1], o.note||"", o.lastBy||o.by||"", fmtDate(o.createdAt), fmtDate(o.updatedAt)]);
     downloadCsv(`semi_production_${todayStr()}.csv`, buildCsv(head, rows));
   });
   qSO('[data-body]').addEventListener("click",e=>{
@@ -3677,27 +3733,7 @@
     const o=(state.data.semiOrders||[]).find(x=>x.id===b.dataset.id); if(!o) return;
     const a=b.dataset.act;
     if(a==="start") save("semiOrders", o.id, {...stripId(o), status:"doing", startedAt:Date.now(), updatedAt:Date.now()}).then(()=>toast(`เริ่มผลิต ${o.name} แล้ว`)).catch(er=>toast(errMsg(er)));
-    if(a==="done"){
-      const m=SEMI.byId(o.itemId); if(!m) return;
-      const lines=(o.mats||[]).map(x=>{ const r=MAT().byId(x.matId); return `${esc(r?r.name:x.name)} −${fmtNum(x.qty)} ${esc(r?r.unit:x.unit)}`; }).join(", ");
-      confirmBox("ผลิตเสร็จ", `ผลิต <b>${esc(m.name)} ${fmtNum(o.yield)} ${esc(m.unit||"")}</b> เสร็จแล้วใช่หรือไม่?<div class="hint" style="margin-top:6px">ระบบจะเพิ่มเข้าสต๊อก: ${fmtNum(m.qty)} → ${fmtNum(round3(round3(m.qty)+round3(o.yield)))} ${esc(m.unit||"")}<br>และตัดวัตถุดิบ: ${lines||"-"}</div>`, "ผลิตเสร็จ", async ()=>{
-        for(const x of (o.mats||[])){ const r=MAT().byId(x.matId);
-          if(!r){ const er=new Error(); er.userMsg=`ไม่พบวัตถุดิบ ${x.name}`; throw er; }
-          if(round3(x.qty)>round3(r.qty)){ const er=new Error(); er.userMsg=`${r.name} คงเหลือไม่พอ (เหลือ ${fmtNum(r.qty)} ${r.unit})`; throw er; } }
-        const now=Date.now(), tag=`ผลิต ${m.name} ${fmtNum(o.rounds)} รอบ`+(o.note?` • ${o.note}`:""); let cost=0;
-        for(const x of (o.mats||[])){ const r=MAT().byId(x.matId), n=round3(x.qty); cost+=n*avgCost(r);
-          await save("moves", newId("mv"), { type:"out", itemId:r.id, name:r.name, unit:r.unit, qty:n, note:tag, at:now });
-          await save("materials", r.id, {...stripId(r), qty:round3(round3(r.qty)-n), updatedAt:now}); }
-        const cur=SEMI.byId(o.itemId), y=round3(o.yield), up=y?Math.round(cost/y*10000)/10000:0, q0=Math.max(0,round3(cur.qty)), nq=round3(q0+y);
-        const upd={...stripId(cur), qty:nq, updatedAt:now};
-        if(up>0 && nq>0){ upd.avgCost=Math.round(((q0*avgCost(cur))+(y*up))/nq*10000)/10000; upd.cost=upd.avgCost; }
-        await save("moves", newId("mv"), { type:"in", itemId:cur.id, name:cur.name, unit:cur.unit, qty:y, unitPrice:up||null, note:tag, at:now });
-        await save("materials", cur.id, upd);
-        await save("semiOrders", o.id, {...stripId(o), status:"done", doneAt:now, updatedAt:now});
-        toast(`เพิ่ม ${cur.name} ${fmtNum(y)} ${cur.unit||""} เข้าสต๊อกแล้ว`);
-      });
-      $("#cfOk").className="btn green";
-    }
+    if(a==="done") openFinish("so", o);
     if(a==="del") confirmBox("ลบรายการ", `ต้องการลบรายการผลิต <b>${esc(o.name)} ${fmtNum(o.rounds)} รอบ</b> ใช่หรือไม่?`, "ลบ", async ()=>{ await remove("semiOrders", o.id); toast("ลบรายการแล้ว"); });
   });
 
@@ -3823,6 +3859,72 @@
     downloadCsv(`count_history_${todayStr()}.csv`, buildCsv(head, rows));
   });
 
+  /* ----- ผลิตเสร็จ: ป๊อปอัพยืนยันผลผลิตจริง + วัตถุดิบที่ใช้จริง (ใช้ทั้งคุกกี้และวัตถุดิบสำเร็จรูป) ----- */
+  let fin=null;
+  function openFinish(kind, o){
+    const item = kind==="po" ? FG().byId(o.itemId) : SEMI.byId(o.itemId); if(!item) return toast("ไม่พบรายการนี้แล้ว");
+    const r0=Number(o.rounds)||1, per=(o.mats||[]).map(x=>({ matId:x.matId, name:x.name, unit:x.unit, per:(Number(x.qty)||0)/r0 }));
+    fin={ kind, id:o.id, per, yPer:(Number(o.yield)||0)/r0, yEdited:false };
+    $("#pdTitle").textContent=`ผลิตเสร็จ — ${item.name}`;
+    $("#pdItem").innerHTML=`${kind==="po"?thumb(item.image,item.name):""}
+      <div class="sell-main"><div class="pname">${esc(item.name)}</div><div class="muted">สั่งผลิต ${fmtNum(o.rounds)} รอบ = ${fmtNum(o.yield)} ${esc(o.unit||item.unit||"")}</div></div>
+      <div class="pd-f"><label>จำนวนรอบ</label><input type="number" min="0" step="any" id="pdRounds" value="${round3(o.rounds)}"></div>
+      <div class="pd-f"><label>ได้จริง (${esc(item.unit||o.unit||"")})</label><input type="number" min="0" step="any" id="pdYield" value="${round3(o.yield)}"></div>`;
+    $("#pdMats").innerHTML = per.length ? per.map((x,i)=>`<tr data-i="${i}">
+        <td class="pname" style="text-align:left">${esc((MAT().byId(x.matId)||x).name)}</td>
+        <td class="num"><div class="pd-q"><input type="number" min="0" step="any" data-pq="${i}" value="${round3(x.per*r0)}"><span class="muted">${esc((MAT().byId(x.matId)||x).unit||"")}</span></div></td>
+        <td class="num" data-av></td><td class="center" data-st></td></tr>`).join("") : `<tr><td colspan="4" class="empty-state">ไม่มีวัตถุดิบในรายการนี้</td></tr>`;
+    $("#pdNote").value=o.note||""; $("#pdErr").textContent="";
+    $("#pdSave").textContent = kind==="po" ? "ผลิตเสร็จ • เพิ่มคุกกี้เข้าสต๊อก" : "ผลิตเสร็จ • เพิ่มเข้าสต๊อก";
+    open("#mPD"); renderFinish(); setTimeout(()=>$("#pdYield").select(),50);
+  }
+  function finRead(){ const q=[...$("#pdMats").querySelectorAll("input[data-pq]")].map(i=>({ i:+i.dataset.pq, v:i.value })); return { rounds:Number($("#pdRounds").value), y:Number($("#pdYield").value), q }; }
+  function renderFinish(){
+    if(!fin) return; const {rounds,y,q}=finRead(); let short=0, bad=false;
+    q.forEach(({i,v})=>{ const x=fin.per[i], m=MAT().byId(x.matId), n=Number(v), tr=$(`#pdMats tr[data-i="${i}"]`);
+      if(v===""||!isFinite(n)||n<0) bad=true;
+      const ok = m && round3(n)<=round3(m.qty); if(!ok) short++;
+      tr.querySelector("[data-av]").textContent = m ? `${fmtNum(m.qty)} ${m.unit||""}` : "-";
+      tr.querySelector("[data-st]").innerHTML = !m ? '<span class="badge out">ถูกลบ</span>' : ok ? '<span class="badge ok">พอ</span>' : '<span class="badge out">ไม่พอ</span>'; });
+    const err = !(rounds>0) ? "กรุณาระบุจำนวนรอบ" : !(y>0) ? "กรุณาระบุจำนวนที่ได้จริง" : bad ? "จำนวนวัตถุดิบต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป" : short ? `วัตถุดิบคงเหลือไม่พอ ${short} รายการ — แก้จำนวนที่ใช้จริง หรือรับเข้าวัตถุดิบก่อน` : "";
+    $("#pdErr").textContent=err; $("#pdSave").disabled = !!err || !state.canWrite;
+  }
+  $("#mPD").addEventListener("input",e=>{
+    if(!fin) return;
+    if(e.target.id==="pdRounds"){ const r=Number(e.target.value)||0;
+      $("#pdMats").querySelectorAll("input[data-pq]").forEach(inp=>{ inp.value=round3(fin.per[+inp.dataset.pq].per*r); });
+      if(!fin.yEdited) $("#pdYield").value=round3(fin.yPer*r); }
+    if(e.target.id==="pdYield") fin.yEdited=true;
+    renderFinish();
+  });
+  $("#pdForm").addEventListener("submit",async e=>{
+    e.preventDefault(); renderFinish(); if($("#pdSave").disabled||!fin) return;
+    const {kind,id}=fin, {rounds,y:yRaw,q}=finRead(), y=round3(yRaw), btn=$("#pdSave"); btn.disabled=true;
+    const coll = kind==="po" ? "prodOrders" : "semiOrders", o=(state.data[coll]||[]).find(x=>x.id===id);
+    try{
+      if(!o || o.status==="done"){ const er=new Error(); er.userMsg="รายการนี้ถูกบันทึกหรือลบไปแล้ว"; throw er; }
+      const used=q.map(({i,v})=>{ const x=fin.per[i], m=MAT().byId(x.matId); return { matId:x.matId, name:m?m.name:x.name, unit:m?m.unit:x.unit, qty:round3(v) }; });
+      for(const x of used){ const m=MAT().byId(x.matId); if(!m){ const er=new Error(); er.userMsg=`ไม่พบวัตถุดิบ ${x.name}`; throw er; }
+        if(x.qty>round3(m.qty)){ const er=new Error(); er.userMsg=`${m.name} คงเหลือไม่พอ (เหลือ ${fmtNum(m.qty)} ${m.unit})`; throw er; } }
+      const note=$("#pdNote").value.trim(), now=Date.now(), tag=`ผลิต ${o.name} ${fmtNum(rounds)} รอบ`+(note?` • ${note}`:""); let cost=0;
+      for(const x of used){ if(!(x.qty>0)) continue; const m=MAT().byId(x.matId); cost+=x.qty*avgCost(m);
+        await save("moves", newId("mv"), { type:"out", itemId:m.id, name:m.name, unit:m.unit, qty:x.qty, note:tag, at:now });
+        await save("materials", m.id, {...stripId(m), qty:round3(round3(m.qty)-x.qty), updatedAt:now}); }
+      let cur;
+      if(kind==="po"){ cur=FG().byId(o.itemId); if(!cur){ const er=new Error(); er.userMsg="ไม่พบสินค้านี้แล้ว"; throw er; }
+        await save("fgMoves", newId("fmv"), { type:"in", itemId:cur.id, name:cur.name, unit:cur.unit, qty:y, note:tag, at:now });
+        await save("finished", cur.id, {...stripId(cur), qty:round3(round3(cur.qty)+y), updatedAt:now}); }
+      else { cur=SEMI.byId(o.itemId); if(!cur){ const er=new Error(); er.userMsg="ไม่พบวัตถุดิบสำเร็จรูปนี้แล้ว"; throw er; }
+        const up=y?Math.round(cost/y*10000)/10000:0, q0=Math.max(0,round3(cur.qty)), nq=round3(q0+y), upd={...stripId(cur), qty:nq, updatedAt:now};
+        if(up>0 && nq>0){ upd.avgCost=Math.round(((q0*avgCost(cur))+(y*up))/nq*10000)/10000; upd.cost=upd.avgCost; }
+        await save("moves", newId("mv"), { type:"in", itemId:cur.id, name:cur.name, unit:cur.unit, qty:y, unitPrice:up||null, note:tag, at:now });
+        await save("materials", cur.id, upd); }
+      await save(coll, o.id, {...stripId(o), status:"done", rounds:round3(rounds), yield:y, mats:used, planned:{ rounds:o.rounds, yield:o.yield, mats:o.mats }, note, doneAt:now, updatedAt:now});
+      close("#mPD"); fin=null; toast(`เพิ่ม ${cur.name} ${fmtNum(y)} ${cur.unit||""} เข้าสต๊อกแล้ว`);
+    }catch(er){ $("#pdErr").textContent=errMsg(er); }
+    finally{ btn.disabled=false; }
+  });
+
   /* ----- sidebar toggle ----- */
   (function(){
     let pref=null; try{ const v=localStorage.getItem("sb_mini"); if(v!==null) pref=v==="1"; }catch(e){}
@@ -3881,7 +3983,7 @@
     if(key==="roles") return d.name||"";
     return d.name||"";
   }
-  const QTY_ONLY = new Set(["qty","updatedAt","countedAt","countedQty","avgCost","cost"]);
+  const QTY_ONLY = new Set(["qty","updatedAt","countedAt","countedQty","countedBy","avgCost","cost"]);
   async function writeLog(key, action, d, prev, isAuth){
     if(key==="logs") return;
     // stock-level changes caused by a movement are already logged by the movement itself
