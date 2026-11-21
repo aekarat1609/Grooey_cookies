@@ -666,6 +666,8 @@
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
       </div>
       <div class="sub">
+        <a class="nav-item" data-view="semi-in" title="นำเข้า"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg><span>นำเข้า</span></a>
+        <a class="nav-item" data-view="semi-out" title="นำออก&amp;เสียหาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg><span>นำออก&amp;เสียหาย</span></a>
         <a class="nav-item" data-view="semi-prod" title="สร้างการผลิต"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><rect x="5" y="6" width="14" height="15" rx="2"/><path d="M12 11v6M9 14h6"/></svg><span>สร้างการผลิต</span><b class="nb" data-nb="so"></b></a>
         <a class="nav-item" data-view="semi-list" title="รายการวัตถุดิบสำเร็จรูป"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>รายการวัตถุดิบสำเร็จรูป</span><b class="nb" data-nb="smn"></b></a>
         <a class="nav-item" data-view="semi-recipe" title="ส่วนผสม"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v6L4.5 18.5A2 2 0 0 0 6.3 21h11.4a2 2 0 0 0 1.8-2.5L14 8V2"/><path d="M8.5 2h7"/><path d="M7 15h10"/></svg><span>ส่วนผสม</span></a>
@@ -779,6 +781,8 @@
     <section class="view" id="view-prep-need"></section>
     <section class="view" id="view-prep-list"></section>
     <section class="view" id="view-prod-create"></section>
+    <section class="view" id="view-semi-in"></section>
+    <section class="view" id="view-semi-out"></section>
     <section class="view" id="view-semi-prod"></section>
     <section class="view" id="view-semi-list"></section>
     <section class="view" id="view-semi-recipe"></section>
@@ -1976,7 +1980,7 @@
       const a=b.dataset.act;
       if(a==="edit") openItem(mod, m);
       if(a==="recipe") openRecipe(m);
-      if(a==="in"||a==="out") openMove(mod, a, m.id);
+      if(a==="in"||a==="out") openMove(mod, a, m.id, m.semi ? { keep:x=>!!x.semi, title:a==="in"?"นำเข้า":"นำออก&เสียหาย" } : { keep:x=>!x.semi });
       if(a==="del") confirmBox(`ลบ${cfg.noun}`, `ต้องการลบ <b>${esc(m.name)}</b> ใช่หรือไม่?<div class="hint" style="margin-top:6px">ประวัติ${cfg.inTitle}/${cfg.outTitle}ของรายการนี้จะยังอยู่</div>`, "ลบ", async ()=>{ await remove(cfg.items, m.id); toast("ลบรายการแล้ว"); });
     });
 
@@ -1984,12 +1988,15 @@
     const colsM = cfg.loc ? 10 : 8;
     const mvOf = mv => byId(mv.itemId || mv.materialId);
     const mvViews = {};
-    Object.values(MV).forEach(t=>{
+    function makeMv(T, grp, keep, keepGone, pickLbl, needLbl){
+    const mItems = () => items().filter(keep);
+    const mMoves = () => moves().filter(mv=>{ const m=mvOf(mv); return m ? keep(m) : keepGone; });
+    Object.values(T).forEach(t=>{
       const ui = { filter:{name:"",from:monthRange(0)[0],to:monthRange(0)[1],cab:"",shelf:"",unit:""}, page:1, perPage:20 };
       const sec = $(`#view-${t.view}`);
       sec.innerHTML = `
         <div class="content">
-          <div class="card title-card"><span class="crumb">${cfg.group} ›</span> ${t.title}</div>
+          <div class="card title-card"><span class="crumb">${grp} ›</span> ${t.title}</div>
           <form class="card search-card" data-search autocomplete="off">
             <div class="field f-name"><label>ชื่อสินค้า</label><select data-f="name" data-ph="ค้นหาชื่อสินค้า (เลือกได้หลายรายการ)"><option value="">ทั้งหมด</option></select></div>
             <div class="field f-range"><label>ช่วงวันที่</label>${drpHtml()}</div>
@@ -2007,7 +2014,7 @@
                 <th class="num">${cfg.mvQtyLabel}</th>
                 <th class="center">หน่วยนับ</th>
                 ${cfg.loc ? '<th class="center">ตู้</th><th class="center">ชั้น</th>' : ''}
-                <th class="num need-h">${cfg.needLabel} <span class="sub">(ปัจจุบัน)</span></th>
+                <th class="num need-h">${needLbl||cfg.needLabel} <span class="sub">(ปัจจุบัน)</span></th>
                 <th class="note-h">หมายเหตุ</th>
                 <th class="upd-h">เวลาอัปเดทล่าสุด</th>
                 <th class="center" style="width:90px">ดำเนินการ</th>
@@ -2023,7 +2030,7 @@
       const drp = initDrp(q('[data-drp]'), () => { ui.filter.from=q('[data-f=from]').value; ui.filter.to=q('[data-f=to]').value; ui.page=1; render(); });
       const filtered = () => {
         const f=ui.filter;
-        return moves()
+        return mMoves()
           .filter(mv => { if(mv.type!==t.type || mv.sale) return false;
             if(!mt(f.name, mvOf(mv)?mvOf(mv).name:mv.name)) return false;
             const d=dayOf(mv.at); if(f.from && d<f.from) return false; if(f.to && d>f.to) return false;
@@ -2034,12 +2041,12 @@
       };
       const render = () => {
         drp.sync();
-        const any=moves().some(mv=>mv.type===t.type && !mv.sale);
-        fillSelect(q('[data-f=name]'), [...new Set(moves().filter(mv=>mv.type===t.type && !mv.sale).map(mv=>{ const m=mvOf(mv); return m?m.name:mv.name; }).filter(Boolean))].sort(natCmp));
+        const any=mMoves().some(mv=>mv.type===t.type && !mv.sale);
+        fillSelect(q('[data-f=name]'), [...new Set(mMoves().filter(mv=>mv.type===t.type && !mv.sale).map(mv=>{ const m=mvOf(mv); return m?m.name:mv.name; }).filter(Boolean))].sort(natCmp));
         if(cfg.loc){
-          fillSelect(q('[data-f=cab]'), [...new Set(items().map(m=>m.cabinet).filter(Boolean))].sort(natCmp));
-          fillSelect(q('[data-f=shelf]'), [...new Set(items().map(m=>m.shelf).filter(Boolean))].sort(natCmp));
-        } else fillSelect(q('[data-f=unit]'), [...new Set(moves().filter(mv=>mv.type===t.type).map(mv=>mv.unit).filter(Boolean))].sort(natCmp));
+          fillSelect(q('[data-f=cab]'), [...new Set(mItems().map(m=>m.cabinet).filter(Boolean))].sort(natCmp));
+          fillSelect(q('[data-f=shelf]'), [...new Set(mItems().map(m=>m.shelf).filter(Boolean))].sort(natCmp));
+        } else fillSelect(q('[data-f=unit]'), [...new Set(mMoves().filter(mv=>mv.type===t.type).map(mv=>mv.unit).filter(Boolean))].sort(natCmp));
         const rows=filtered(), {view,pages}=paginate(rows,ui);
         q('[data-total]').textContent=rows.length.toLocaleString("th-TH");
         const dis=state.canWrite?"":"disabled";
@@ -2066,10 +2073,10 @@
         if(ui.filter.from && ui.filter.to && ui.filter.from>ui.filter.to){ const x=ui.filter.from; ui.filter.from=ui.filter.to; ui.filter.to=x; q('[data-f=from]').value=ui.filter.from; q('[data-f=to]').value=ui.filter.to; }
         ui.page=1; render(); });
       q('[data-clear]').addEventListener("click",()=>{ sec.querySelectorAll("[data-f]").forEach(clearF); Object.keys(ui.filter).forEach(k=>ui.filter[k]=""); ui.page=1; render(); });
-      q('[data-add]').addEventListener("click",()=>openPicker({ title:`${t.title} — เลือก${cfg.pick}`, nextLabel:"ถัดไป", nextClass:t.type==="in"?"green":"primary",
-        items:()=>items(), byId, badge, empty:`ยังไม่มี${cfg.noun} เพิ่มได้ที่เมนู “รายการทั้งหมด”`,
+      q('[data-add]').addEventListener("click",()=>openPicker({ title:`${t.title} — เลือก${pickLbl||cfg.pick}`, nextLabel:"ถัดไป", nextClass:t.type==="in"?"green":"primary",
+        items:()=>mItems(), byId, badge, empty:`ยังไม่มี${cfg.noun} เพิ่มได้ที่เมนู “รายการทั้งหมด”`,
         canPick:it=>state.canWrite && (t.type==="in" || (Number(it.qty)||0)>0),
-        onNext:list=>openMove(mod, t.type, list.map(x=>x.id)) }));
+        onNext:list=>openMove(mod, t.type, list.map(x=>x.id), {keep, title:t.title}) }));
       q('[data-download]').addEventListener("click",()=>{
         const head=["ชื่อสินค้า",cfg.mvQtyLabel,"หน่วยนับ","หมายเหตุ","เวลา"];
         const rows=filtered().map(mv=>[mv.name, (t.type==="out"?-1:1)*round3(mv.qty), mv.unit, mv.note||"", fmtDate(mv.at)]);
@@ -2079,10 +2086,15 @@
       q('[data-pager]').addEventListener("click",e=>{ const b=e.target.closest("button[data-p]"); if(!b||b.disabled) return; ui.page=+b.dataset.p; render(); });
       q('[data-body]').addEventListener("click",e=>{
         const b=e.target.closest("button[data-act=delmv]"); if(!b) return;
-        const mv=moves().find(x=>x.id===b.dataset.id); if(mv) deleteMove(mod, mv);
+        const mv=mMoves().find(x=>x.id===b.dataset.id); if(mv) deleteMove(mod, mv);
       });
       mvViews[t.view]=render;
     });
+    }
+    if(cfg.key==="mat"){
+      makeMv(MV, cfg.group, m=>!m.semi, true);
+      makeMv({ in:{ type:"in", title:"นำเข้า", sign:"+", cls:"plus", view:"semi-in" }, out:{ type:"out", title:"นำออก&เสียหาย", sign:"−", cls:"minus", view:"semi-out" } }, "วัตถุดิบสำเร็จรูป", m=>!!m.semi, false, "วัตถุดิบสำเร็จรูป", "ต้องทำเพิ่ม");
+    } else makeMv(MV, cfg.group, ()=>true, true);
 
     /* ----- STOCK COUNT (ตรวจนับ) — สร้างได้หลายหน้า (วัตถุดิบ / วัตถุดิบสำเร็จรูป) ----- */
     const countRenders = {};
@@ -2230,7 +2242,7 @@
     else makeCount(cfg.views.count, cfg.countTitle, ()=>true);
 
     mod.render = v => { if(v===cfg.views.all) renderA(); else if(countRenders[v]) countRenders[v](); else if(mvViews[v]) mvViews[v](); };
-    mod.views = [cfg.views.all, cfg.views.in, cfg.views.out, ...Object.keys(countRenders)];
+    mod.views = [cfg.views.all, ...Object.keys(mvViews), ...Object.keys(countRenders)];
     mod.mvOf = mvOf;
     return mod;
   }
@@ -2293,7 +2305,7 @@
   const canMove = it => state.canWrite && (moveCtx.type==="in" || (Number(it.qty)||0) > 0);
   function moveMatches(){
     const q=$("#moveSearch").value;
-    return moveCtx.mod.items().map(it=>({it, sc:fuzzy(it.name,q)})).filter(x=>x.sc!==null)
+    return moveCtx.mod.items().filter(moveCtx.keep).map(it=>({it, sc:fuzzy(it.name,q)})).filter(x=>x.sc!==null)
       .sort((a,b)=> b.sc-a.sc || natCmp(a.it.name,b.it.name)).map(x=>x.it);
   }
   function renderMoveList(){
@@ -2339,9 +2351,9 @@
   }
   const openMoveList = () => { $("#moveMs").classList.add("open"); renderMoveList(); };
   const closeMoveList = () => { $("#moveMs").classList.remove("open"); moveAct=0; };
-  function openMove(mod, type, ids){
-    ids=[].concat(ids||[]);
-    moveCtx={ mod, type }; const t=mod.MV[type], c=mod.cfg;
+  function openMove(mod, type, ids, opts){
+    ids=[].concat(ids||[]); opts=opts||{};
+    moveCtx={ mod, type, keep:opts.keep||(()=>true), title:opts.title||mod.MV[type].title }; const t={...mod.MV[type], title:moveCtx.title}, c=mod.cfg;
     moveSel.length=0; Object.keys(moveQty).forEach(k=>delete moveQty[k]);
     $("#moveTitle").textContent=`บันทึก${t.title}`;
     $("#moveQtyHead").textContent=(type==="out"&&c.outQty)?c.outQty:(type==="in"&&c.inQty)?c.inQty:`จำนวนที่${t.title}`;
@@ -2401,7 +2413,7 @@
         await save(c.items, m.id, upd);
       }
       close("#mMove");
-      toast(rows.length>1 ? `บันทึก${mod.MV[type].title} ${rows.length} รายการแล้ว` : `บันทึก${mod.MV[type].title} ${fmtNum(rows[0].n)} ${rows[0].m.unit} แล้ว`);
+      toast(rows.length>1 ? `บันทึก${moveCtx.title} ${rows.length} รายการแล้ว` : `บันทึก${moveCtx.title} ${fmtNum(rows[0].n)} ${rows[0].m.unit} แล้ว`);
     }catch(err){ $("#moveErr").textContent=errMsg(err); }
     finally{ btn.disabled=false; }
   });
@@ -3739,12 +3751,12 @@
     const g=a.closest(".nav-group"); return { view:a.dataset.view, label:a.getAttribute("title")||a.textContent.trim(), group: g ? g.querySelector(".grp-head").getAttribute("title") : "" }; });
   const navLabel = v => { const m=ALL_VIEWS_P().find(x=>x.view===v); return m ? (m.group && m.group!==m.label ? `${m.group} › ${m.label}` : m.label) : v; };
   const P = (v,e,d) => ({v:v?1:0, e:e?1:0, d:d?1:0});
-  const permsFrom = fn => { const o={}; ["dashboard","products","sale-bills","sale-report","fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","semi-prod","semi-list","semi-recipe","prod-create","prep-need","set-users","set-roles","set-perms","set-logs","set-billno"].forEach(v=>o[v]=fn(v)); return o; };
+  const permsFrom = fn => { const o={}; ["dashboard","products","sale-bills","sale-report","fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","semi-in","semi-out","semi-prod","semi-list","semi-recipe","prod-create","prep-need","set-users","set-roles","set-perms","set-logs","set-billno"].forEach(v=>o[v]=fn(v)); return o; };
   const DEFAULT_ROLES = [
     { id:"role-owner", name:"เจ้าของร้าน", desc:"ใช้งานได้ทุกเมนู รวมถึงการตั้งค่าระบบ", system:true, perms:permsFrom(()=>P(1,1,1)) },
     { id:"role-manager", name:"ผู้จัดการ", desc:"ดูแลสต๊อก การผลิต และการขาย ดูการตั้งค่าได้อย่างเดียว", perms:permsFrom(v=> v.startsWith("set-") ? P(1,0,0) : P(1,1,1)) },
     { id:"role-sales", name:"พนักงานขาย", desc:"ขายสินค้า ดูบิล และตรวจนับสินค้าสำเร็จรูป", perms:permsFrom(v=> ["products","sale-bills","fg-count"].includes(v) ? P(1,1,0) : ["dashboard","sale-report","finished"].includes(v) ? P(1,0,0) : P(0,0,0)) },
-    { id:"role-kitchen", name:"พนักงานครัว", desc:"รับเข้า/นำออกวัตถุดิบ ผลิตคุกกี้ และตรวจนับ", perms:permsFrom(v=> v==="dashboard" ? P(1,0,0) : ["fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","semi-prod","semi-list","semi-recipe","prod-create","prep-need"].includes(v) ? P(1,1,0) : P(0,0,0)) },
+    { id:"role-kitchen", name:"พนักงานครัว", desc:"รับเข้า/นำออกวัตถุดิบ ผลิตคุกกี้ และตรวจนับ", perms:permsFrom(v=> v==="dashboard" ? P(1,0,0) : ["fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","semi-in","semi-out","semi-prod","semi-list","semi-recipe","prod-create","prep-need"].includes(v) ? P(1,1,0) : P(0,0,0)) },
   ];
   const rolesList = () => { const r=state.data.roles||[]; return r.length ? r : DEFAULT_ROLES; };
   const roleById = id => rolesList().find(r=>r.id===id) || null;
@@ -3754,7 +3766,7 @@
   const currentRole = () => { const u=currentUser(); if(u) return roleById(u.roleId) || roleById("role-sales");
     if(state.isOwner || !state.db) return roleById("role-owner") || DEFAULT_ROLES[0];
     return roleById("role-sales") || DEFAULT_ROLES[2]; };
-  const permOf = v => { const r=currentRole(); if(!r) return P(1,1,1); if(r.id==="role-owner") return P(1,1,1); const PFB={"semi-count":"mat-count","semi-prod":"prod-create","semi-list":"prep-need","semi-recipe":"prep-need"}; const p=(r.perms||{})[v] || (PFB[v] ? (r.perms||{})[PFB[v]] : null); return p ? {v:!!p.v, e:!!p.v&&!!p.e, d:!!p.v&&!!p.d} : P(0,0,0); };
+  const permOf = v => { const r=currentRole(); if(!r) return P(1,1,1); if(r.id==="role-owner") return P(1,1,1); const PFB={"semi-in":"mat-in","semi-out":"mat-out","semi-count":"mat-count","semi-prod":"prod-create","semi-list":"prep-need","semi-recipe":"prep-need"}; const p=(r.perms||{})[v] || (PFB[v] ? (r.perms||{})[PFB[v]] : null); return p ? {v:!!p.v, e:!!p.v&&!!p.e, d:!!p.v&&!!p.d} : P(0,0,0); };
   function applyPerms(){
     document.querySelectorAll(".sidebar .nav-item[data-view]").forEach(a=>{ a.style.display = permOf(a.dataset.view).v ? "" : "none"; });
     document.querySelectorAll(".sidebar .nav-group").forEach(g=>{ const any=[...g.querySelectorAll(".sub .nav-item[data-view]")].some(a=>a.style.display!=="none"); g.style.display = any ? "" : "none"; });
