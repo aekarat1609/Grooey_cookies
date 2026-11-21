@@ -266,6 +266,8 @@
   .rc.rc-semi{display:flex;flex-direction:column;gap:10px}
   .rc-semi .rc-foot{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;margin-top:auto}
   .rc-semi .rc-tbl{width:100%}
+  .cl-sum{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:14px;margin:0 2px}
+  .cl-sum:empty{display:none}
   .up-step{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0}
   .up-file{display:flex;align-items:center;gap:10px;margin:4px 0 6px}
   .up-file label{cursor:pointer}
@@ -657,6 +659,7 @@
         <a class="nav-item" data-view="mat-count" title="ตรวจนับวัตถุดิบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg><span>ตรวจนับวัตถุดิบ</span><b class="nb" data-nb="cntm"></b></a>
         <a class="nav-item" data-view="semi-count" title="ตรวจนับวัตถุดิบสำเร็จรูป"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg><span>ตรวจนับวัตถุดิบสำเร็จรูป</span><b class="nb" data-nb="cnts"></b></a>
         <a class="nav-item" data-view="fg-count" title="ตรวจนับสินค้าสำเร็จรูป"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><path d="M1 3h22v5H1z"/><path d="M9 14l2 2 4-4"/></svg><span>ตรวจนับสินค้าสำเร็จรูป</span><b class="nb" data-nb="cntf"></b></a>
+        <a class="nav-item" data-view="count-log" title="ประวัติตรวจนับ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>ประวัติตรวจนับ</span></a>
       </div>
     </div>
     <div class="nav-group">
@@ -777,6 +780,7 @@
     <section class="view" id="view-fg-out"></section>
     <section class="view" id="view-mat-count"></section>
     <section class="view" id="view-semi-count"></section>
+    <section class="view" id="view-count-log"></section>
     <section class="view" id="view-fg-count"></section>
     <section class="view" id="view-prep-need"></section>
     <section class="view" id="view-prep-list"></section>
@@ -2189,7 +2193,8 @@
     }
     async function saveCount(m, counted){
       const now=Date.now(), sys=round3(m.qty), diff=round3(counted-sys);
-      await save(cfg.moves, newId("cnt"), { type:"count", itemId:m.id, name:m.name, unit:m.unit, qty:Math.abs(diff), diff, before:sys, after:counted, note:"ตรวจนับสต๊อก", at:now });
+      if(diff!==0){ const u=(typeof sessionUser==="function" && sessionUser()) || null;
+        await save(cfg.moves, newId("cnt"), { type:"count", itemId:m.id, name:m.name, unit:m.unit, qty:Math.abs(diff), diff, before:sys, after:counted, note:"ตรวจนับสต๊อก", at:now, by:u?(u.name||u.username||""):"", semi:!!m.semi }); }
       await save(cfg.items, m.id, {...stripId(m), qty:counted, countedAt:now, countedQty:counted, updatedAt:now});
       delete draft[m.id];
     }
@@ -2740,7 +2745,7 @@
   /* =========================================================
      NAVIGATION
      ========================================================= */
-  const VIEWS=["dashboard","products","sale-bills","sale-report","set-users","set-roles","set-perms","set-logs","set-billno"].concat(...MODS.map(m=>m.views),["prod-create","prep-need","prep-list","semi-prod","semi-list","semi-recipe"]);
+  const VIEWS=["dashboard","products","sale-bills","sale-report","set-users","set-roles","set-perms","set-logs","set-billno"].concat(...MODS.map(m=>m.views),["prod-create","prep-need","prep-list","count-log","semi-prod","semi-list","semi-recipe"]);
   function showView(v){
     if(!VIEWS.includes(v)) v="dashboard";
     if(!permOf(v).v){ const first=ALL_VIEWS_P().find(m=>permOf(m.view).v); v = first ? first.view : "dashboard"; try{ if(location.hash!=="#"+v) history.replaceState(null,"","#"+v); }catch(e){} }
@@ -2785,6 +2790,7 @@
     if(state.view==="semi-prod") return renderSOList();
     if(state.view==="semi-recipe") return renderSemiRecipe();
     if(state.view==="semi-list") return renderSemiList();
+    if(state.view==="count-log") return renderCountLog();
     if(state.view==="set-users"){ ensureRoles(); return renderUsers(); }
     if(state.view==="set-roles"){ ensureRoles(); return renderRoles(); }
     if(state.view==="set-perms") return renderPerms();
@@ -3732,6 +3738,91 @@
     scan(document);
   })();
 
+  /* ----- ประวัติตรวจนับ (เฉพาะรายการที่มีส่วนต่าง) ----- */
+  const CL_TYPES = ["วัตถุดิบ","วัตถุดิบสำเร็จรูป","สินค้าสำเร็จรูป"];
+  const uiCL = { filter:{name:"",type:"",from:monthRange(0)[0],to:monthRange(0)[1]}, page:1, perPage:20 };
+  const secCL = $("#view-count-log");
+  secCL.innerHTML = `
+    <div class="content">
+      <div class="card title-card"><span class="crumb">ตรวจนับสต๊อก ›</span> ประวัติตรวจนับ <span class="crumb" style="font-weight:400;font-size:13px">(เฉพาะรายการที่มีส่วนต่าง)</span></div>
+      <form class="card search-card" data-search autocomplete="off">
+        <div class="field f-name"><label>ชื่อสินค้า</label>${selHtml("name","ค้นหาชื่อสินค้า (เลือกได้หลายรายการ)")}</div>
+        <div class="field f-small"><label>ประเภท</label><select data-f="type"><option value="">ทั้งหมด</option>${CL_TYPES.map(t=>`<option>${t}</option>`).join("")}</select></div>
+        <div class="field f-range"><label>ช่วงวันที่</label>${drpHtml()}</div>
+        <div class="btns">
+          <button type="submit" class="btn primary">${ICON.search}ค้นหา</button>
+          <button type="button" class="btn" data-clear>${ICON.reset}ล้างค่า</button>
+          <button type="button" class="btn" data-download>${ICON.dl}ดาวน์โหลด</button>
+        </div>
+      </form>
+      <div class="cl-sum" data-sum></div>
+      <div class="card table-card">
+        <table>
+          <thead><tr>
+            <th>วันที่ตรวจนับ</th>
+            <th>ชื่อสินค้า</th>
+            <th class="center">ประเภท</th>
+            <th class="center">หน่วยนับ</th>
+            <th class="num">จำนวนในระบบ</th>
+            <th class="num">จำนวนที่นับได้</th>
+            <th class="num">ส่วนต่าง</th>
+            <th class="num">มูลค่าส่วนต่าง</th>
+            <th>ผู้ตรวจนับ</th>
+          </tr></thead>
+          <tbody data-body></tbody>
+        </table>
+      </div>
+      <div class="status" data-status></div>
+    </div>
+    ${footerHtml}`;
+  const qCL = s => secCL.querySelector(s);
+  qCL('[data-f=from]').value=uiCL.filter.from; qCL('[data-f=to]').value=uiCL.filter.to;
+  const drpCL = initDrp(qCL('[data-drp]'), () => { uiCL.filter.from=qCL('[data-f=from]').value; uiCL.filter.to=qCL('[data-f=to]').value; uiCL.page=1; renderCountLog(); });
+  function clAll(){
+    const out=[];
+    (state.data.moves||[]).forEach(mv=>{ if(mv.type!=="count" || !round3(mv.diff)) return; const m=MAT().byId(mv.itemId);
+      const semi = m ? !!m.semi : !!mv.semi; out.push({ mv, item:m, type: semi?"วัตถุดิบสำเร็จรูป":"วัตถุดิบ", cost: m?avgCost(m):0 }); });
+    (state.data.fgMoves||[]).forEach(mv=>{ if(mv.type!=="count" || !round3(mv.diff)) return; const it=FG().byId(mv.itemId);
+      out.push({ mv, item:it, type:"สินค้าสำเร็จรูป", cost: it?Number(it.price)||0:0 }); });
+    return out;
+  }
+  function clRows(){ const f=uiCL.filter;
+    return clAll().filter(r=>{ const name=r.item?r.item.name:r.mv.name, d=dayOf(r.mv.at); return mt(f.name,name) && mt(f.type,r.type) && (!f.from||d>=f.from) && (!f.to||d<=f.to); })
+      .sort((a,b)=>(b.mv.at||0)-(a.mv.at||0)); }
+  function renderCountLog(){
+    drpCL.sync();
+    fillSelect(qCL('[data-f=name]'), [...new Set(clAll().map(r=>r.item?r.item.name:r.mv.name).filter(Boolean))].sort(natCmp));
+    const rows=clRows(), {view,pages}=paginate(rows,uiCL);
+    qCL('[data-total]').textContent=rows.length.toLocaleString("th-TH");
+    const plus=rows.filter(r=>r.mv.diff>0).length, minus=rows.length-plus, val=rows.reduce((a,r)=>a+Number(r.mv.diff)*r.cost,0);
+    qCL('[data-sum]').innerHTML = rows.length ? `<span>พบส่วนต่าง <b>${rows.length}</b> รายการ</span><span class="plus">เกิน ${plus}</span><span class="low">ขาด ${minus}</span><span>มูลค่าสุทธิ <b class="${val<0?"low":"plus"}">${val<0?"−":"+"}${baht(Math.abs(val))}</b></span>` : "";
+    qCL('[data-body]').innerHTML = !clAll().length ? `<tr><td colspan="9" class="empty-state">ยังไม่มีประวัติตรวจนับที่มีส่วนต่าง</td></tr>`
+      : !view.length ? `<tr><td colspan="9" class="empty-state">ไม่พบรายการที่ตรงกับการค้นหา</td></tr>`
+      : view.map(r=>{ const mv=r.mv, d=round3(mv.diff), u=esc(mv.unit||""), v=d*r.cost;
+        return `<tr>
+          <td class="muted">${fmtDate(mv.at)}</td>
+          <td class="pname pn2">${pn(r.item?r.item.name:mv.name)}${r.item?"":' <span class="hint">(ถูกลบแล้ว)</span>'}</td>
+          <td class="center"><span class="chip">${r.type}</span></td>
+          <td class="center">${chip(mv.unit)}</td>
+          <td class="num">${fmtNum(mv.before)}</td>
+          <td class="num"><b>${fmtNum(mv.after)}</b></td>
+          <td class="num ${d>0?"plus":"low"}">${d>0?"+":"−"}${fmtNum(Math.abs(d))} <span class="muted">${u}</span></td>
+          <td class="num ${v<0?"low":"plus"}">${r.cost?`${v<0?"−":"+"}${baht(Math.abs(v))}`:'<span class="muted">-</span>'}</td>
+          <td class="muted">${esc(mv.by||"-")}</td>
+        </tr>`; }).join("");
+    renderPager(qCL('[data-pager]'), uiCL.page, pages);
+  }
+  qCL('[data-search]').addEventListener("submit",e=>{ e.preventDefault(); uiCL.filter.name=readF(qCL('[data-f=name]')); uiCL.filter.type=qCL('[data-f=type]').value;
+    uiCL.filter.from=qCL('[data-f=from]').value; uiCL.filter.to=qCL('[data-f=to]').value; uiCL.page=1; renderCountLog(); });
+  qCL('[data-clear]').addEventListener("click",()=>{ secCL.querySelectorAll("[data-f]").forEach(clearF); qCL('[data-f=type]').value=""; Object.keys(uiCL.filter).forEach(k=>uiCL.filter[k]=""); uiCL.page=1; renderCountLog(); });
+  qCL('[data-perpage]').addEventListener("change",e=>{ uiCL.perPage=+e.target.value; uiCL.page=1; renderCountLog(); });
+  qCL('[data-pager]').addEventListener("click",e=>{ const b=e.target.closest("button[data-p]"); if(!b||b.disabled) return; uiCL.page=+b.dataset.p; renderCountLog(); });
+  qCL('[data-download]').addEventListener("click",()=>{
+    const head=["วันที่ตรวจนับ","ชื่อสินค้า","ประเภท","หน่วยนับ","จำนวนในระบบ","จำนวนที่นับได้","ส่วนต่าง","มูลค่าส่วนต่าง","ผู้ตรวจนับ"];
+    const rows=clRows().map(r=>[fmtDate(r.mv.at), r.item?r.item.name:r.mv.name, r.type, r.mv.unit, round3(r.mv.before), round3(r.mv.after), round3(r.mv.diff), Math.round(Number(r.mv.diff)*r.cost*100)/100, r.mv.by||""]);
+    downloadCsv(`count_history_${todayStr()}.csv`, buildCsv(head, rows));
+  });
+
   /* ----- sidebar toggle ----- */
   (function(){
     let pref=null; try{ const v=localStorage.getItem("sb_mini"); if(v!==null) pref=v==="1"; }catch(e){}
@@ -3751,12 +3842,12 @@
     const g=a.closest(".nav-group"); return { view:a.dataset.view, label:a.getAttribute("title")||a.textContent.trim(), group: g ? g.querySelector(".grp-head").getAttribute("title") : "" }; });
   const navLabel = v => { const m=ALL_VIEWS_P().find(x=>x.view===v); return m ? (m.group && m.group!==m.label ? `${m.group} › ${m.label}` : m.label) : v; };
   const P = (v,e,d) => ({v:v?1:0, e:e?1:0, d:d?1:0});
-  const permsFrom = fn => { const o={}; ["dashboard","products","sale-bills","sale-report","fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","semi-in","semi-out","semi-prod","semi-list","semi-recipe","prod-create","prep-need","set-users","set-roles","set-perms","set-logs","set-billno"].forEach(v=>o[v]=fn(v)); return o; };
+  const permsFrom = fn => { const o={}; ["dashboard","products","sale-bills","sale-report","fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","count-log","semi-in","semi-out","semi-prod","semi-list","semi-recipe","prod-create","prep-need","set-users","set-roles","set-perms","set-logs","set-billno"].forEach(v=>o[v]=fn(v)); return o; };
   const DEFAULT_ROLES = [
     { id:"role-owner", name:"เจ้าของร้าน", desc:"ใช้งานได้ทุกเมนู รวมถึงการตั้งค่าระบบ", system:true, perms:permsFrom(()=>P(1,1,1)) },
     { id:"role-manager", name:"ผู้จัดการ", desc:"ดูแลสต๊อก การผลิต และการขาย ดูการตั้งค่าได้อย่างเดียว", perms:permsFrom(v=> v.startsWith("set-") ? P(1,0,0) : P(1,1,1)) },
     { id:"role-sales", name:"พนักงานขาย", desc:"ขายสินค้า ดูบิล และตรวจนับสินค้าสำเร็จรูป", perms:permsFrom(v=> ["products","sale-bills","fg-count"].includes(v) ? P(1,1,0) : ["dashboard","sale-report","finished"].includes(v) ? P(1,0,0) : P(0,0,0)) },
-    { id:"role-kitchen", name:"พนักงานครัว", desc:"รับเข้า/นำออกวัตถุดิบ ผลิตคุกกี้ และตรวจนับ", perms:permsFrom(v=> v==="dashboard" ? P(1,0,0) : ["fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","semi-in","semi-out","semi-prod","semi-list","semi-recipe","prod-create","prep-need"].includes(v) ? P(1,1,0) : P(0,0,0)) },
+    { id:"role-kitchen", name:"พนักงานครัว", desc:"รับเข้า/นำออกวัตถุดิบ ผลิตคุกกี้ และตรวจนับ", perms:permsFrom(v=> v==="dashboard" ? P(1,0,0) : ["fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","count-log","semi-in","semi-out","semi-prod","semi-list","semi-recipe","prod-create","prep-need"].includes(v) ? P(1,1,0) : P(0,0,0)) },
   ];
   const rolesList = () => { const r=state.data.roles||[]; return r.length ? r : DEFAULT_ROLES; };
   const roleById = id => rolesList().find(r=>r.id===id) || null;
@@ -3766,7 +3857,7 @@
   const currentRole = () => { const u=currentUser(); if(u) return roleById(u.roleId) || roleById("role-sales");
     if(state.isOwner || !state.db) return roleById("role-owner") || DEFAULT_ROLES[0];
     return roleById("role-sales") || DEFAULT_ROLES[2]; };
-  const permOf = v => { const r=currentRole(); if(!r) return P(1,1,1); if(r.id==="role-owner") return P(1,1,1); const PFB={"semi-in":"mat-in","semi-out":"mat-out","semi-count":"mat-count","semi-prod":"prod-create","semi-list":"prep-need","semi-recipe":"prep-need"}; const p=(r.perms||{})[v] || (PFB[v] ? (r.perms||{})[PFB[v]] : null); return p ? {v:!!p.v, e:!!p.v&&!!p.e, d:!!p.v&&!!p.d} : P(0,0,0); };
+  const permOf = v => { const r=currentRole(); if(!r) return P(1,1,1); if(r.id==="role-owner") return P(1,1,1); const PFB={"count-log":"mat-count","semi-in":"mat-in","semi-out":"mat-out","semi-count":"mat-count","semi-prod":"prod-create","semi-list":"prep-need","semi-recipe":"prep-need"}; const p=(r.perms||{})[v] || (PFB[v] ? (r.perms||{})[PFB[v]] : null); return p ? {v:!!p.v, e:!!p.v&&!!p.e, d:!!p.v&&!!p.d} : P(0,0,0); };
   function applyPerms(){
     document.querySelectorAll(".sidebar .nav-item[data-view]").forEach(a=>{ a.style.display = permOf(a.dataset.view).v ? "" : "none"; });
     document.querySelectorAll(".sidebar .nav-group").forEach(g=>{ const any=[...g.querySelectorAll(".sub .nav-item[data-view]")].some(a=>a.style.display!=="none"); g.style.display = any ? "" : "none"; });
