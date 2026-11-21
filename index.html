@@ -32,9 +32,14 @@
   .nb{margin-left:auto;background:#fff;color:#E2541F;font-size:11.5px;font-weight:700;min-width:20px;height:20px;line-height:20px;border-radius:10px;padding:0 6px;text-align:center;flex:none}
   .nb:empty{display:none}
   .grp-head .nb:not(:empty) + .chev{margin-left:6px}
-  .nav-item.active{background:rgba(255,255,255,.24)}
-  .grp-head.active{background:rgba(255,255,255,.24);font-weight:600}
-  .sub .nav-item.active{background:rgba(255,255,255,.18)}
+  /* ไฮไลต์เมนู: พื้นครีม ตัวอักษรส้มเข้ม ให้เด่นบนแถบสีส้ม */
+  .nav-item.active{background:#FFF6EE;color:#C2410C;font-weight:600;box-shadow:0 2px 6px rgba(124,45,18,.18)}
+  .nav-item.active svg{color:#E2541F}
+  .nav-item.active .nb{background:#E2541F;color:#fff}
+  .grp-head.active{background:#FFF6EE;color:#C2410C;font-weight:600;box-shadow:0 2px 6px rgba(124,45,18,.18)}
+  .grp-head.active svg{color:#E2541F}
+  .grp-head.active .nb{background:#E2541F;color:#fff}
+  .sub .nav-item.active{background:#FFF6EE;color:#C2410C}
   .nav-item svg{width:18px;height:18px;flex:0 0 auto}
   .nav-item .chev{margin-left:auto;width:14px;height:14px;transition:transform .2s}
   .nav-group.closed .chev{transform:rotate(-90deg)}
@@ -258,6 +263,21 @@
   .sell-qty{display:flex;align-items:center;gap:6px}
   .sell-qty input,.modal .field .sell-qty input{width:90px;text-align:center}
   .sell-qty .muted{min-width:34px}
+  .rc.rc-semi{display:flex;flex-direction:column;gap:10px}
+  .rc-semi .rc-foot{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;margin-top:auto}
+  .rc-semi .rc-tbl{width:100%}
+  .up-step{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0}
+  .up-file{display:flex;align-items:center;gap:10px;margin:4px 0 6px}
+  .up-file label{cursor:pointer}
+  .up-file span{color:var(--muted);font-size:13.5px}
+  .up-help{margin:4px 0 10px 18px;padding:0;color:var(--muted);font-size:13px;line-height:1.7}
+  .up-err{background:#FEF2F2;border:1px solid #FCA5A5;color:#B91C1C;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px}
+  .up-err ul{margin:6px 0 0 18px;padding:0;line-height:1.6}
+  .up-ok{background:#ECFDF5;border:1px solid #6EE7B7;color:#047857;border-radius:10px;padding:10px 14px;margin-top:8px}
+  .up-tbl{max-height:260px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:8px}
+  .up-tbl table{min-width:0;width:100%;font-size:13px}
+  .up-tbl th{position:sticky;top:0;background:var(--orange);color:#fff;padding:6px 8px;text-align:left}
+  .up-tbl td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
   .set-card{padding:16px 18px}
   .set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;max-width:900px}
   .set-grid select,.set-grid input{width:100%}
@@ -475,6 +495,12 @@
   .rc-go{padding:6px 18px}
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   .rcp-rows{display:flex;flex-direction:column;gap:6px}
+  .cb-inp{width:100%;background:#fff url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center/14px;padding-right:30px!important}
+  .cb-list{position:fixed;z-index:3000;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.16);max-height:240px;overflow:auto;padding:4px}
+  .cb-opt{padding:8px 10px;border-radius:7px;cursor:pointer;font-size:14px}
+  .cb-opt.on{background:#FFF1E6;color:var(--orange-d)}
+  .cb-opt.sel{font-weight:600}
+  .cb-none{padding:10px;color:var(--muted);font-size:13px}
   .rcp-row{display:grid;grid-template-columns:1fr 110px 70px 120px 28px;gap:8px;align-items:center}
   .modal .rcp-row select,.modal .rcp-row input{width:100%}
   .rcp-c{font-size:12.5px}
@@ -617,7 +643,7 @@
       </div>
       <div class="sub">
         <a class="nav-item" data-view="mat-in" title="รับเข้า"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="M8 10l4 4 4-4"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>รับเข้า</span></a>
-        <a class="nav-item" data-view="mat-out" title="นำออก"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14V3"/><path d="M8 7l4-4 4 4"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>นำออก</span></a>
+        <a class="nav-item" data-view="mat-out" title="นำออก&amp;เสียหาย"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14V3"/><path d="M8 7l4-4 4 4"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span>นำออก&amp;เสียหาย</span></a>
         <a class="nav-item" data-view="materials" title="รายการทั้งหมด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg><span>รายการทั้งหมด</span><b class="nb" data-nb="mat"></b></a>
       </div>
     </div>
@@ -629,7 +655,20 @@
       </div>
       <div class="sub">
         <a class="nav-item" data-view="mat-count" title="ตรวจนับวัตถุดิบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg><span>ตรวจนับวัตถุดิบ</span><b class="nb" data-nb="cntm"></b></a>
+        <a class="nav-item" data-view="semi-count" title="ตรวจนับวัตถุดิบสำเร็จรูป"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg><span>ตรวจนับวัตถุดิบสำเร็จรูป</span><b class="nb" data-nb="cnts"></b></a>
         <a class="nav-item" data-view="fg-count" title="ตรวจนับสินค้าสำเร็จรูป"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><path d="M1 3h22v5H1z"/><path d="M9 14l2 2 4-4"/></svg><span>ตรวจนับสินค้าสำเร็จรูป</span><b class="nb" data-nb="cntf"></b></a>
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-item grp-head" title="วัตถุดิบสำเร็จรูป">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11h14l-1.2 8.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9L5 11z"/><path d="M3 11h18"/><path d="M9 7c0-2 1.5-3 3-3s3 1 3 3"/><path d="M12 4v3"/></svg>
+        <span>วัตถุดิบสำเร็จรูป</span><b class="nb" data-nb="semi"></b>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="sub">
+        <a class="nav-item" data-view="semi-prod" title="สร้างการผลิต"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><rect x="5" y="6" width="14" height="15" rx="2"/><path d="M12 11v6M9 14h6"/></svg><span>สร้างการผลิต</span><b class="nb" data-nb="so"></b></a>
+        <a class="nav-item" data-view="semi-list" title="รายการวัตถุดิบสำเร็จรูป"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>รายการวัตถุดิบสำเร็จรูป</span><b class="nb" data-nb="smn"></b></a>
+        <a class="nav-item" data-view="semi-recipe" title="ส่วนผสม"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v6L4.5 18.5A2 2 0 0 0 6.3 21h11.4a2 2 0 0 0 1.8-2.5L14 8V2"/><path d="M8.5 2h7"/><path d="M7 15h10"/></svg><span>ส่วนผสม</span></a>
       </div>
     </div>
     <div class="nav-group">
@@ -677,6 +716,7 @@
             <button type="button" class="btn" id="btnClear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>ล้างค่า</button>
             <button type="button" class="btn" id="btnDownload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>ดาวน์โหลด</button>
             <button type="button" class="btn green" id="btnAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>เพิ่มรายการ</button>
+            <button type="button" class="btn bl-only" id="btnUpload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>อัปโหลด</button>
           </div>
         </form>
         <div class="card table-card st-only">
@@ -734,10 +774,14 @@
     <section class="view" id="view-fg-in"></section>
     <section class="view" id="view-fg-out"></section>
     <section class="view" id="view-mat-count"></section>
+    <section class="view" id="view-semi-count"></section>
     <section class="view" id="view-fg-count"></section>
     <section class="view" id="view-prep-need"></section>
     <section class="view" id="view-prep-list"></section>
     <section class="view" id="view-prod-create"></section>
+    <section class="view" id="view-semi-prod"></section>
+    <section class="view" id="view-semi-list"></section>
+    <section class="view" id="view-semi-recipe"></section>
     <section class="view" id="view-set-users"></section>
     <section class="view" id="view-set-roles"></section>
     <section class="view" id="view-set-perms"></section>
@@ -901,6 +945,42 @@
   </form>
 </div>
 
+<!-- ===== Semi-finished material: recipe ===== -->
+<div class="overlay" id="mSemi">
+  <form class="modal" id="smForm" style="max-width:680px" autocomplete="off">
+    <div class="modal-h"><span id="smTitle">เพิ่มวัตถุดิบสำเร็จรูป</span><button type="button" class="x" data-close>&times;</button></div>
+    <div class="modal-b">
+      <div class="grid2">
+        <div class="field"><label><span class="req">*</span> ชื่อวัตถุดิบสำเร็จรูป</label><input type="text" id="smName" maxlength="80" placeholder="เช่น แป้งโดคุกกี้, ครีมชีส"></div>
+        <div class="field"><label><span class="req">*</span> หน่วยนับ</label><input type="text" id="smUnit" maxlength="20" placeholder="เช่น กิโลกรัม, ถุง"></div>
+        <div class="field"><label><span class="req">*</span> จำนวนที่ได้ต่อ 1 รอบ</label><input type="number" min="0" step="any" id="smYield" placeholder="เช่น 2"></div>
+        <div class="field"><label>ควรมีอย่างน้อย</label><input type="number" min="0" step="any" id="smTarget" placeholder="0"></div>
+      </div>
+      <div class="field"><label><span class="req">*</span> ส่วนผสมต่อ 1 รอบ (วัตถุดิบ)</label><div id="smRows"></div>
+        <button type="button" class="btn sm" id="smAdd" style="margin-top:6px">+ เพิ่มวัตถุดิบ</button></div>
+      <div class="hint" id="smCost"></div>
+      <div class="err" id="smErr"></div>
+    </div>
+    <div class="modal-f"><button type="button" class="btn" data-close>ยกเลิก</button><button type="submit" class="btn green" id="smSave">บันทึก</button></div>
+  </form>
+</div>
+<!-- ===== Semi-finished material: production order ===== -->
+<div class="overlay" id="mSO">
+  <form class="modal" id="soForm" style="max-width:680px" autocomplete="off">
+    <div class="modal-h"><span id="soTitle">สร้างการผลิต</span><button type="button" class="x" data-close>&times;</button></div>
+    <div class="modal-b">
+      <div class="field"><label><span class="req">*</span> จำนวนรอบที่จะผลิต</label><div id="soRows"></div></div>
+      <div class="field"><label>วัตถุดิบที่ต้องใช้ (รวมทุกรายการ)</label>
+        <div class="table-card" style="border:1px solid #EEE;border-radius:8px"><table style="min-width:0;table-layout:auto">
+          <thead><tr><th>วัตถุดิบ</th><th class="num">ต้องใช้</th><th class="num">พร้อมใช้</th><th class="center">สถานะ</th></tr></thead>
+          <tbody id="soMats"></tbody></table></div></div>
+      <div class="field"><label>หมายเหตุ</label><input type="text" id="soNote" maxlength="200" placeholder="เช่น รอบเช้า"></div>
+      <div class="err" id="soErr"></div>
+    </div>
+    <div class="modal-f"><button type="button" class="btn" data-close>ยกเลิก</button><button type="submit" class="btn green" id="soSave">สร้างการผลิต</button></div>
+  </form>
+</div>
+
 <!-- ===== Production order ===== -->
 <div class="overlay" id="mPO">
   <form class="modal" id="poForm" style="max-width:680px" autocomplete="off">
@@ -988,9 +1068,9 @@
     plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
   };
 
-  const COL = { products:"products", materials:"materials", moves:"material_moves", finished:"finished_goods", fgMoves:"finished_moves", prepJobs:"material_prep_jobs", prodOrders:"production_orders", bills:"sales_bills", users:"app_users", roles:"app_roles", logs:"audit_logs", settings:"app_settings" };
+  const COL = { products:"products", materials:"materials", moves:"material_moves", finished:"finished_goods", fgMoves:"finished_moves", prepJobs:"material_prep_jobs", prodOrders:"production_orders", semiOrders:"semi_orders", bills:"sales_bills", users:"app_users", roles:"app_roles", logs:"audit_logs", settings:"app_settings" };
   const state = {
-    data:{ products:[], materials:[], moves:[], finished:[], fgMoves:[], prepJobs:[], prodOrders:[], bills:[], users:[], roles:[], logs:[] },
+    data:{ products:[], materials:[], moves:[], finished:[], fgMoves:[], prepJobs:[], prodOrders:[], semiOrders:[], bills:[], users:[], roles:[], logs:[] },
     db:null, canWrite:true, platformWrite:true, meId:null, isOwner:false, view:"products",
     ui:{
       products:{ filter:{name:"",cab:"",shelf:"",status:""}, from:new Date().toLocaleDateString("sv-SE"), to:new Date().toLocaleDateString("sv-SE"), page:1, perPage:20 }
@@ -1123,13 +1203,14 @@
     fgMoves: () => { const now=Date.now(); return SAMPLE_FG_MOVES.map(({hoursAgo,...m})=>({...m, at:now-hoursAgo*3600000})); },
     prepJobs: () => [],
     prodOrders: () => [],
+    semiOrders: () => [],
     bills: () => [],
     users: () => [],
     roles: () => JSON.parse(JSON.stringify(DEFAULT_ROLES)),
     logs: () => [],
     settings: () => []
   };
-  const LS = { products:"stock_items_v1", materials:"stock_materials_v1", moves:"stock_moves_v1", finished:"stock_finished_v1", fgMoves:"stock_fg_moves_v1" , prepJobs:"stock_mat_prep_v1", prodOrders:"stock_prod_orders_v1", bills:"stock_sales_bills_v1", users:"stock_app_users_v1", roles:"stock_app_roles_v1", logs:"stock_audit_logs_v1", settings:"stock_app_settings_v1" };
+  const LS = { products:"stock_items_v1", materials:"stock_materials_v1", moves:"stock_moves_v1", finished:"stock_finished_v1", fgMoves:"stock_fg_moves_v1" , prepJobs:"stock_mat_prep_v1", prodOrders:"stock_prod_orders_v1", semiOrders:"stock_semi_orders_v1", bills:"stock_sales_bills_v1", users:"stock_app_users_v1", roles:"stock_app_roles_v1", logs:"stock_audit_logs_v1", settings:"stock_app_settings_v1" };
   function lsLoad(key){
     let saved=null; try{ saved=localStorage.getItem(LS[key]); }catch(e){}
     if(saved){ try{ return JSON.parse(saved); }catch(e){} }
@@ -1330,6 +1411,7 @@
       }).join("");
     renderPager($("#pager"), ui.page, pages);
     $("#btnAdd").disabled=!state.canWrite;
+    $("#btnUpload").disabled=!state.canWrite;
   }
   $("#qDateRange").innerHTML = drpHtml();
   { const r=$("#qDateRange [data-drp]"); r.querySelector('[data-f=from]').value=state.ui.products.from; r.querySelector('[data-f=to]').value=state.ui.products.to; }
@@ -1629,6 +1711,111 @@
     }catch(err){ $("#sellErr").textContent=errMsg(err); }
     finally{ btn.disabled=false; }
   });
+  /* ===== อัปโหลดบิลขายจากไฟล์ (เฉพาะเมนูบิลขาย) ===== */
+  const UP_HEAD=["เลขบิล","วันที่","เวลา","ช่องทางขาย","ชื่อสินค้า","จำนวน","ราคาต่อหน่วย","หมายเหตุ"];
+  const mUp=mkModal("mUp","อัปโหลดบิลขาย",`
+    <div class="up-step"><b>1.</b> ดาวน์โหลดแทมเพลต แล้วกรอกข้อมูลใน Excel หรือ Google Sheets <button type="button" class="btn sm" data-up-tpl>${ICON.dl||""}ดาวน์โหลดแทมเพลต (.csv)</button></div>
+    <ul class="up-help">
+      <li>1 แถว = สินค้า 1 รายการ • บิลที่มีหลายสินค้า ให้ใส่ <b>เลขบิลเดียวกัน</b> ทุกแถว</li>
+      <li>เลขบิลเว้นว่างได้ ระบบจะออกเลขให้ตามวันที่ขาย (แถวละ 1 บิล)</li>
+      <li>วันที่: วว/ดด/ปปปป (พ.ศ. หรือ ค.ศ.) • เวลา: ชช:นน (เว้นว่างได้)</li>
+      <li>ชื่อสินค้าต้องตรงกับในระบบ • ราคาต่อหน่วยเว้นว่างได้ จะใช้ราคาขายที่ตั้งไว้</li>
+      <li>ช่องทางขาย: ${CHANNELS.join(", ")} (เว้นว่าง = หน้าร้าน)</li>
+      <li>บันทึกไฟล์เป็น <b>CSV UTF-8</b> ก่อนอัปโหลด • ระบบจะตัดสต๊อกสินค้าตามจำนวนที่ขาย</li>
+    </ul>
+    <div class="up-step"><b>2.</b> เลือกไฟล์ที่กรอกแล้ว</div>
+    <div class="up-file"><label class="btn sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>เลือกไฟล์<input type="file" accept=".csv,text/csv" data-up-file hidden></label><span data-up-fname>ยังไม่ได้เลือกไฟล์</span></div>
+    <div data-up-prev></div>`, "นำเข้าบิล");
+  mUp.querySelector(".modal").style.maxWidth="820px";
+  let upBills=null;
+  function parseCsv(text){
+    text=text.replace(/^\uFEFF/,""); const rows=[]; let row=[], f="", q=false;
+    for(let i=0;i<text.length;i++){ const c=text[i];
+      if(q){ if(c==='"'){ if(text[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; }
+      else if(c==='"') q=true; else if(c===","){ row.push(f); f=""; } else if(c==="\n"||c==="\r"){ if(c==="\r"&&text[i+1]==="\n") i++; row.push(f); rows.push(row); row=[]; f=""; } else f+=c; }
+    if(f!==""||row.length){ row.push(f); rows.push(row); }
+    return rows.filter(r=>r.some(x=>String(x).trim()!==""));
+  }
+  function parseUpDate(dStr, tStr){
+    const d=String(dStr||"").trim(); let y,m,dd;
+    let mt=d.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/); if(mt){ dd=+mt[1]; m=+mt[2]; y=+mt[3]; }
+    else if((mt=d.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))){ y=+mt[1]; m=+mt[2]; dd=+mt[3]; } else return null;
+    if(y<100) y+= y>40 ? 2500 : 2000; if(y>2400) y-=543;
+    const t=String(tStr||"").trim().match(/^(\d{1,2})[:.](\d{2})/); const hh=t?+t[1]:12, mi=t?+t[2]:0;
+    const dt=new Date(y, m-1, dd, hh, mi); if(isNaN(dt) || dt.getMonth()!==m-1 || dt.getDate()!==dd || hh>23 || mi>59) return null; return dt;
+  }
+  const normName = n => String(n||"").trim().toLowerCase().replace(/\s+/g," ");
+  function findFg(name){ const k=normName(name); const all=FG().items();
+    return all.find(i=>normName(i.name)===k) || all.find(i=>normName(String(i.name).replace(/\s*\([^()]*\)\s*$/,""))===k) || null; }
+  function buildUpload(rows){
+    const errs=[], head=rows[0].map(x=>String(x).trim()), idx={}; UP_HEAD.forEach(h=>idx[h]=head.indexOf(h));
+    if(idx["ชื่อสินค้า"]<0||idx["จำนวน"]<0||idx["วันที่"]<0) return { errs:["ไม่พบหัวคอลัมน์ วันที่ / ชื่อสินค้า / จำนวน กรุณาใช้แทมเพลตของระบบ"], bills:[] };
+    const get=(r,h)=> idx[h]>=0 ? String(r[idx[h]]??"").trim() : "";
+    const existNos=new Set((state.data.bills||[]).map(b=>String(b.no)));
+    const groups=new Map(); const need={};
+    rows.slice(1).forEach((r,i)=>{ const ln=i+2, e=[];
+      const no=get(r,"เลขบิล"), at=parseUpDate(get(r,"วันที่"), get(r,"เวลา")), it=findFg(get(r,"ชื่อสินค้า"));
+      const qty=Number(get(r,"จำนวน").replace(/,/g,"")), pvs=get(r,"ราคาต่อหน่วย").replace(/[,฿\s]/g,""), ch=get(r,"ช่องทางขาย")||CHANNELS[0];
+      if(!at) e.push("วันที่หรือเวลาไม่ถูกต้อง");
+      if(!it) e.push(`ไม่พบสินค้า "${get(r,"ชื่อสินค้า")||"-"}"`);
+      if(!(qty>0)) e.push("จำนวนต้องมากกว่า 0");
+      const price = pvs==="" ? (it?Number(it.price)||0:0) : Number(pvs);
+      if(pvs!=="" && !(price>=0)) e.push("ราคาต่อหน่วยไม่ถูกต้อง");
+      if(pvs==="" && it && !(Number(it.price)>0)) e.push("สินค้านี้ยังไม่ได้ตั้งราคาขาย กรุณาใส่ราคาต่อหน่วย");
+      if(no && existNos.has(no)) e.push(`เลขบิล ${no} มีอยู่ในระบบแล้ว`);
+      if(e.length){ errs.push(`แถว ${ln}: ${e.join(" • ")}`); return; }
+      const key = no ? `no:${no}` : `row:${ln}`;
+      if(!groups.has(key)) groups.set(key,{ no, at, channel:ch, note:get(r,"หมายเหตุ"), lines:[], ln });
+      const g=groups.get(key); if(no && (g.at.getTime()!==at.getTime() || g.channel!==ch)) errs.push(`แถว ${ln}: บิล ${no} มีวันที่/เวลา หรือช่องทางขายไม่ตรงกับแถวก่อนหน้า`);
+      if(!g.note && get(r,"หมายเหตุ")) g.note=get(r,"หมายเหตุ");
+      g.lines.push({ it, qty:round3(qty), price:Math.round(price*100)/100 }); need[it.id]=round3((need[it.id]||0)+qty);
+    });
+    Object.entries(need).forEach(([id,q])=>{ const it=FG().byId(id); if(it && q>round3(it.qty)) errs.push(`${it.name}: ในไฟล์ขายรวม ${fmtNum(q)} ${it.unit||""} แต่คงเหลือ ${fmtNum(it.qty)} ${it.unit||""}`); });
+    return { errs, bills:[...groups.values()].sort((a,b)=>a.at-b.at) };
+  }
+  function renderUpPrev(res){
+    const box=mUp.querySelector("[data-up-prev]"), ok=mUp.querySelector("[data-ok]");
+    if(!res){ box.innerHTML=""; ok.disabled=true; return; }
+    const nLines=res.bills.reduce((a,b)=>a+b.lines.length,0), amt=res.bills.reduce((a,b)=>a+b.lines.reduce((x,l)=>x+l.qty*l.price,0),0);
+    box.innerHTML = res.errs.length
+      ? `<div class="up-err"><b>พบข้อผิดพลาด ${res.errs.length} จุด</b> แก้ไขไฟล์แล้วเลือกใหม่<ul>${res.errs.slice(0,30).map(x=>`<li>${esc(x)}</li>`).join("")}${res.errs.length>30?`<li>และอีก ${res.errs.length-30} จุด</li>`:""}</ul></div>`
+      : `<div class="up-ok">พร้อมนำเข้า <b>${res.bills.length} บิล</b> • ${nLines} รายการ • ยอดรวม <b>${fmtBaht(amt)}</b></div>
+         <div class="up-tbl"><table><thead><tr><th>เลขบิล</th><th>วันที่ / เวลา</th><th>ช่องทาง</th><th>รายการ</th><th class="num">ยอดเงิน</th></tr></thead><tbody>${res.bills.slice(0,50).map(b=>`<tr><td>${esc(b.no||"(ออกเลขอัตโนมัติ)")}</td><td>${esc(fmtDate(b.at.getTime()))}</td><td>${esc(b.channel)}</td><td>${b.lines.map(l=>`${esc(l.it.name)} × ${fmtNum(l.qty)}`).join("<br>")}</td><td class="num">${fmtBaht(b.lines.reduce((x,l)=>x+l.qty*l.price,0))}</td></tr>`).join("")}</tbody></table></div>`;
+    ok.disabled = !!res.errs.length || !res.bills.length;
+  }
+  $("#btnUpload").addEventListener("click",()=>{ upBills=null; mUp.querySelector("[data-up-file]").value=""; mUp.querySelector("[data-up-fname]").textContent="ยังไม่ได้เลือกไฟล์"; mUp.querySelector("[data-err]").textContent=""; renderUpPrev(null); open("#mUp"); });
+  mUp.querySelector("[data-up-tpl]").addEventListener("click",()=>{
+    const fg=FG().items(), d=new Date(), ds=`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()+543}`;
+    const a=fg[0], b=fg[1]||fg[0];
+    const ex = a ? [["B001", ds, "10:30", "หน้าร้าน", a.name, 2, Number(a.price)||"", "ตัวอย่าง: บิลหลายรายการใช้เลขบิลเดียวกัน"], ["B001", ds, "10:30", "หน้าร้าน", b.name, 1, Number(b.price)||"", ""], ["", ds, "14:00", "LINE MAN", a.name, 1, "", "เลขบิลว่าง = ระบบออกเลขให้"]] : [];
+    downloadCsv("template_upload_bills.csv", buildCsv(UP_HEAD, ex));
+  });
+  mUp.querySelector("[data-up-file]").addEventListener("change", async e=>{
+    const f=e.target.files[0]; upBills=null; mUp.querySelector("[data-up-fname]").textContent = f ? f.name : "ยังไม่ได้เลือกไฟล์"; if(!f){ renderUpPrev(null); return; }
+    try{ const rows=parseCsv(await f.text()); if(rows.length<2){ renderUpPrev({errs:["ไฟล์ไม่มีข้อมูล"],bills:[]}); return; } const res=buildUpload(rows); upBills=res.errs.length?null:res.bills; renderUpPrev(res); }
+    catch(er){ renderUpPrev({errs:["อ่านไฟล์ไม่สำเร็จ กรุณาบันทึกเป็น CSV UTF-8"],bills:[]}); }
+  });
+  mUp.querySelector("form").addEventListener("submit", async e=>{
+    e.preventDefault(); if(!upBills||!upBills.length) return; const err=mUp.querySelector("[data-err]"), btn=mUp.querySelector("[data-ok]"); err.textContent=""; btn.disabled=true; btn.textContent="กำลังนำเข้า…";
+    const cfg=billCfg(), used=new Set((state.data.bills||[]).map(b=>String(b.no))); let done=0;
+    try{
+      for(const g of upBills){
+        let no=g.no; if(!no){ const k=`${cfg.prefix||""}${billDatePart(cfg.date,g.at)}${cfg.sep||""}`; let n=[...used].filter(x=>x.startsWith(k)).reduce((mx,x)=>{ const r=x.slice(k.length); return /^\d+$/.test(r)?Math.max(mx,+r):mx; },0)+1; no=billNoFor(cfg,g.at,n); }
+        used.add(no);
+        const at=g.at.getTime(), billId=newId("bill"), lines=[];
+        for(const l of g.lines){ const it=FG().byId(l.it.id); const mid=newId("sale");
+          await save("fgMoves", mid, { type:"out", sale:true, billId, billNo:no, itemId:it.id, name:it.name, unit:it.unit, qty:l.qty, unitPrice:l.price, note:`บิล ${no} (อัปโหลด)`, at });
+          await save("finished", it.id, {...stripId(it), qty:round3(round3(it.qty)-l.qty), updatedAt:Date.now()});
+          lines.push({ itemId:it.id, name:it.name, unit:it.unit||"", qty:l.qty, unitPrice:l.price, moveId:mid }); }
+        await save("bills", billId, { no, at, channel:g.channel, note:g.note||"", items:lines, total:Math.round(lines.reduce((a,x)=>a+x.qty*x.unitPrice,0)*100)/100, status:"ok", uploaded:true });
+        done++;
+      }
+      close(mUp); toast(`นำเข้าบิลแล้ว ${done} บิล`);
+      { const ds=upBills.map(g=>ymd(g.at)).sort(), u=state.ui.products; const f=[ds[0], u.from].filter(Boolean).sort()[0], t=[ds[ds.length-1], u.to].filter(Boolean).sort().pop();
+        if(u.from||u.to){ try{ saleDrp.set(f, t, true); }catch(e){} } }
+    }catch(er){ err.textContent=`นำเข้าได้ ${done} บิล แล้วเกิดข้อผิดพลาด: ${errMsg(er)}`; }
+    finally{ btn.disabled=false; btn.textContent="นำเข้าบิล"; }
+  });
   $("#tbody").addEventListener("click",e=>{
     const b=e.target.closest("button[data-act]"); if(!b) return;
     const it=FG().byId(b.dataset.id); if(!it) return;
@@ -1661,7 +1848,7 @@
      ========================================================= */
   const MODULES = {
     mat: { key:"mat", items:"materials", moves:"moves", group:"การจัดการวัตถุดิบ", noun:"วัตถุดิบ", pick:"วัตถุดิบ",
-      views:{ all:"materials", in:"mat-in", out:"mat-out", count:"mat-count" }, countTitle:"ตรวจนับวัตถุดิบ", inTitle:"รับเข้า", outTitle:"นำออก",
+      views:{ all:"materials", in:"mat-in", out:"mat-out", count:"mat-count" }, countTitle:"ตรวจนับวัตถุดิบ", inTitle:"รับเข้า", outTitle:"นำออก&เสียหาย",
       qtyLabel:"จำนวนรายการ", mvQtyLabel:"จำนวนรายการ", needLabel:"จำนวนที่ต้องซื้อ", needStatus:"ต้องซื้อเพิ่ม", needShort:"ต้องซื้อ",
       loc:false, csv:"materials", namePh:"ค้นหาชื่อวัตถุดิบ", idPrefix:"m", nameEx:"เช่น แป้งสาลี", notePh:"เช่น ซื้อจากร้าน… / ใช้ผลิต…" },
     fg:  { key:"fg", items:"finished", moves:"fgMoves", group:"สินค้าสำเร็จรูป", noun:"สินค้าสำเร็จรูป", pick:"สินค้า",
@@ -1897,14 +2084,17 @@
       mvViews[t.view]=render;
     });
 
-    /* ----- STOCK COUNT (ตรวจนับ) ----- */
+    /* ----- STOCK COUNT (ตรวจนับ) — สร้างได้หลายหน้า (วัตถุดิบ / วัตถุดิบสำเร็จรูป) ----- */
+    const countRenders = {};
+    function makeCount(cView, cTitle, keep){
+    const cItems = () => items().filter(keep);
     const uiC = { filter:{name:"",unit:"",cab:"",shelf:"",status:""}, page:1, perPage:20 };
     const draft = {};                       // id -> counted value (string) typed but not saved yet
     const colsC = cfg.loc ? 11 : 9;
-    const secC = $(`#view-${cfg.views.count}`);
+    const secC = $(`#view-${cView}`);
     secC.innerHTML = `
       <div class="content">
-        <div class="card title-card"><span class="crumb">ตรวจนับสต๊อก ›</span> ${cfg.countTitle} <span class="crumb" style="font-weight:400;font-size:13px;margin-left:6px" data-round></span></div>
+        <div class="card title-card"><span class="crumb">ตรวจนับสต๊อก ›</span> ${cTitle} <span class="crumb" style="font-weight:400;font-size:13px;margin-left:6px" data-round></span></div>
         <form class="card search-card" data-search autocomplete="off">
           <div class="field f-name"><label>ชื่อสินค้า</label><select data-f="name" data-ph="ค้นหาชื่อสินค้า (เลือกได้หลายรายการ)"><option value="">ทั้งหมด</option></select></div>
           ${cfg.loc
@@ -1948,7 +2138,7 @@
     };
     function filteredC(){
       const f=uiC.filter;
-      return items()
+      return cItems()
         .filter(m => mt(f.name,m.name) && mt(f.unit,m.unit)
           && mt(f.cab,m.cabinet) && mt(f.shelf,m.shelf)
           && mt(f.status, countedToday(m) ? "done" : "todo"))
@@ -1956,7 +2146,7 @@
     }
     function renderC(){
       { const r=qC('[data-round]'); if(r) r.innerHTML = `ตรวจนับสัปดาห์ละครั้ง ทุกวันจันทร์ • รอบนี้: ${esc(countRoundLabel())}` + (isCountDay()?' <span class="badge lowb" style="margin-left:4px">วันนี้วันตรวจนับ</span>':''); }
-      const all=items();
+      const all=cItems();
       fillSelect(qC('[data-f=name]'), [...new Set(all.map(m=>m.name).filter(Boolean))].sort(natCmp));
       if(cfg.loc){
         fillSelect(qC('[data-f=cab]'), [...new Set(all.map(m=>m.cabinet).filter(Boolean))].sort(natCmp));
@@ -2023,7 +2213,7 @@
       downloadCsv(`count_${cfg.csv}_${todayStr()}.csv`, buildCsv(head, rows));
     });
     qC('[data-saveall]').addEventListener("click",()=>{
-      const list=items().map(m=>({m, n:readDraft(m.id)})).filter(x=>x.n!==null);
+      const list=cItems().map(m=>({m, n:readDraft(m.id)})).filter(x=>x.n!==null);
       if(!list.length){ toast("ยังไม่ได้กรอกจำนวนที่นับได้"); return; }
       if(list.some(x=>Number.isNaN(x.n))){ toast("มีช่องที่กรอกจำนวนไม่ถูกต้อง"); return; }
       const diffs=list.filter(x=>round3(x.n-round3(x.m.qty))!==0);
@@ -2034,9 +2224,13 @@
       });
       $("#cfOk").className="btn green";
     });
+    countRenders[cView]=renderC;
+    }
+    if(cfg.key==="mat"){ makeCount(cfg.views.count, cfg.countTitle, m=>!m.semi); makeCount("semi-count", "ตรวจนับวัตถุดิบสำเร็จรูป", m=>!!m.semi); }
+    else makeCount(cfg.views.count, cfg.countTitle, ()=>true);
 
-    mod.render = v => { if(v===cfg.views.all) renderA(); else if(v===cfg.views.count) renderC(); else if(mvViews[v]) mvViews[v](); };
-    mod.views = [cfg.views.all, cfg.views.in, cfg.views.out, cfg.views.count];
+    mod.render = v => { if(v===cfg.views.all) renderA(); else if(countRenders[v]) countRenders[v](); else if(mvViews[v]) mvViews[v](); };
+    mod.views = [cfg.views.all, cfg.views.in, cfg.views.out, ...Object.keys(countRenders)];
     mod.mvOf = mvOf;
     return mod;
   }
@@ -2534,7 +2728,7 @@
   /* =========================================================
      NAVIGATION
      ========================================================= */
-  const VIEWS=["dashboard","products","sale-bills","sale-report","set-users","set-roles","set-perms","set-logs","set-billno"].concat(...MODS.map(m=>m.views),["prod-create","prep-need","prep-list"]);
+  const VIEWS=["dashboard","products","sale-bills","sale-report","set-users","set-roles","set-perms","set-logs","set-billno"].concat(...MODS.map(m=>m.views),["prod-create","prep-need","prep-list","semi-prod","semi-list","semi-recipe"]);
   function showView(v){
     if(!VIEWS.includes(v)) v="dashboard";
     if(!permOf(v).v){ const first=ALL_VIEWS_P().find(m=>permOf(m.view).v); v = first ? first.view : "dashboard"; try{ if(location.hash!=="#"+v) history.replaceState(null,"","#"+v); }catch(e){} }
@@ -2561,9 +2755,10 @@
   function updateNavBadges(){
     const t=todayStr(), fg=FG(), mat=MAT();
     const notCounted = list => list.filter(m=>!countedThisWeek(m)).length;
-    const cntm=notCounted(mat.items()), cntf=notCounted(fg.items());
+    const cntm=notCounted(mat.items().filter(m=>!m.semi)), cnts=notCounted(mat.items().filter(m=>m.semi)), cntf=notCounted(fg.items());
     const n={ fg:fg.items().filter(m=>fg.need(m)>0).length, mat:mat.items().filter(m=>mat.need(m)>0).length,
-      cntm, cntf, cnt:cntm+cntf, po:(state.data.prodOrders||[]).filter(o=>o.status!=="done").length };
+      cntm, cnts, cntf, cnt:cntm+cnts+cntf, po:(state.data.prodOrders||[]).filter(o=>o.status!=="done").length, so:(state.data.semiOrders||[]).filter(o=>o.status!=="done").length };
+    n.smn=mat.items().filter(m=>m.semi && mat.need(m)>0).length; n.semi=n.so+n.smn;
     document.querySelectorAll(".nb[data-nb]").forEach(b=>{ const v=n[b.dataset.nb]||0; b.textContent = v>0 ? (v>99?"99+":String(v)) : ""; });
   }
   function renderAll(){
@@ -2575,6 +2770,9 @@
     if(state.view==="dashboard") return renderDashboard();
     if(state.view==="products"||state.view.startsWith("sale-")){ const nt = state.view==="sale-bills" ? "bills" : state.view==="sale-report" ? "report" : "stock"; if(state.ui.products.tab!==nt){ state.ui.products.tab=nt; state.ui.bills.page=1; } return renderSaleView(); }
     if(state.view==="prod-create") return renderPOList();
+    if(state.view==="semi-prod") return renderSOList();
+    if(state.view==="semi-recipe") return renderSemiRecipe();
+    if(state.view==="semi-list") return renderSemiList();
     if(state.view==="set-users"){ ensureRoles(); return renderUsers(); }
     if(state.view==="set-roles"){ ensureRoles(); return renderRoles(); }
     if(state.view==="set-perms") return renderPerms();
@@ -2749,7 +2947,7 @@
 
   /* ----- edit recipe ----- */
   let recipeId=null;
-  const matOptions = sel => `<option value="">— เลือกวัตถุดิบ —</option>` + [...matItems()].sort((a,b)=>natCmp(a.name,b.name)).map(m=>`<option value="${esc(m.id)}" ${m.id===sel?"selected":""}>${esc(m.name)} (${esc(m.unit)})</option>`).join("");
+  const matOptions = sel => `<option value="">— เลือกวัตถุดิบ —</option>` + [...matItems()].sort((a,b)=>natCmp(a.name,b.name)).map(m=>`<option value="${esc(m.id)}" ${m.id===sel?"selected":""}>${esc(m.name)} (${esc(m.unit)})${m.semi?" • สำเร็จรูป":""}</option>`).join("");
   function recipeRow(r){
     const m=r&&r.matId?MAT().byId(r.matId):null;
     return `<div class="rcp-row">
@@ -2975,7 +3173,7 @@
   const PO_ST = { todo:["lowb","รอผลิต"], doing:["info","กำลังผลิต"], done:["ok","ผลิตเสร็จ"] };
   const poBadge = o => { const s=PO_ST[o.status]||PO_ST.todo; return `<span class="badge ${s[0]}">${s[1]}</span>`; };
   // วัตถุดิบที่ถูกจองไว้ในรายการผลิตที่ยังไม่เสร็จ
-  const poReserved = () => { const r={}; state.data.prodOrders.forEach(o=>{ if(o.status==="done") return; (o.mats||[]).forEach(x=>{ r[x.matId]=round3((r[x.matId]||0)+(Number(x.qty)||0)); }); }); return r; };
+  const poReserved = () => { const r={}; [...state.data.prodOrders, ...(state.data.semiOrders||[])].forEach(o=>{ if(o.status==="done") return; (o.mats||[]).forEach(x=>{ r[x.matId]=round3((r[x.matId]||0)+(Number(x.qty)||0)); }); }); return r; };
   const poAvail = (m, res) => round3((Number(m.qty)||0) - (res[m.id]||0));
   const poReady = it => recipeOf(it).length>0 && Number(it.batchYield)>0;
   const pickForProduction = () => openPicker({ title:"สร้างรายการผลิต — เลือกคุกกี้", nextLabel:"ถัดไป",
@@ -3148,6 +3346,380 @@
     if(a==="del") confirmBox("ลบรายการ", `ต้องการลบรายการผลิต <b>${esc(o.name)} ${fmtNum(o.rounds)} รอบ</b> ใช่หรือไม่?`, "ลบ", async ()=>{ await remove("prodOrders", o.id); toast("ลบรายการแล้ว"); });
   });
 
+  /* =========================================================
+     วัตถุดิบสำเร็จรูป — ผลิตจากวัตถุดิบ แล้วเก็บเป็นวัตถุดิบ (semi:true) ไว้ใช้ในสูตรคุกกี้
+     ========================================================= */
+  const semiItems = () => matItems().filter(m=>m.semi);
+  const SEMI = { byId:id=>{ const m=MAT().byId(id); return m&&m.semi?m:null; }, need:m=>MAT().need(m), badge:m=>MAT().badge(m) };
+  const semiBatchCost = m => recipeOf(m).reduce((a,r)=>{ const x=MAT().byId(r.matId); return a+(Number(r.qty)||0)*(x?avgCost(x):0); },0);
+  const semiUnitCost = m => { const y=Number(m.batchYield)||0; return y ? semiBatchCost(m)/y : 0; };
+  const semiReady = m => recipeOf(m).length>0 && Number(m.batchYield)>0;
+
+  /* ----- ส่วนผสม (สูตรวัตถุดิบสำเร็จรูป) ----- */
+  const uiSR = { filter:{name:""} };
+  const secSR = $("#view-semi-recipe");
+  secSR.innerHTML = `
+    <div class="content">
+      <div class="card title-card"><span class="crumb">วัตถุดิบสำเร็จรูป ›</span> ส่วนผสม <span class="crumb" style="font-weight:400;font-size:13px">(สูตรวัตถุดิบต่อรอบการผลิต)</span></div>
+      <form class="card search-card" data-search autocomplete="off">
+        <div class="field f-name"><label>ชื่อวัตถุดิบสำเร็จรูป</label>${selHtml("name","ค้นหาชื่อ (เลือกได้หลายรายการ)")}</div>
+        ${prepBtns}
+      </form>
+      <div class="rc-grid" data-body></div>
+      <div class="status" data-status></div>
+    </div>`;
+  const qSR = s => secSR.querySelector(s);
+  const semiRows = () => semiItems().filter(m=>mt(uiSR.filter.name,m.name)).sort((a,b)=>natCmp(a.name,b.name));
+  function renderSemiRecipe(){
+    fillSelect(qSR('[data-f=name]'), [...new Set(semiItems().map(m=>m.name))].sort(natCmp));
+    const rows=semiRows(), dis=state.canWrite?"":"disabled";
+    qSR('[data-add]').disabled=!state.canWrite;
+    qSR('[data-body]').innerHTML = !semiItems().length ? `<div class="card empty-state" style="grid-column:1/-1">ยังไม่มีวัตถุดิบสำเร็จรูป กด “เพิ่มรายการ” เพื่อสร้างสูตร เช่น แป้งโด หรือไส้ครีม</div>`
+      : !rows.length ? `<div class="card empty-state" style="grid-column:1/-1">ไม่พบรายการที่ตรงกับการค้นหา</div>`
+      : rows.map(m=>{ const rec=recipeOf(m), u=esc(m.unit||""), need=SEMI.need(m), uc=semiUnitCost(m);
+        const tbl = rec.length ? `<table class="rc-tbl"><thead><tr><th>วัตถุดิบ</th><th>ต้องใช้</th></tr></thead><tbody>${rec.map(r=>{ const x=MAT().byId(r.matId); return `<tr><td>${esc(x?x.name:"(วัตถุดิบถูกลบ)")}</td><td>${fmtNum(r.qty)} ${esc(x?x.unit:"")}</td></tr>`; }).join("")}</tbody></table>` : '<span class="muted">ยังไม่มีสูตร กด “แก้ไข” เพื่อเพิ่มวัตถุดิบ</span>';
+        return `<div class="card rc rc-semi">
+          <div class="rc-top">
+            <div style="flex:1;min-width:0"><div class="rc-title">${esc(m.name)}</div><div class="rc-sub">${m.batchYield?`1 รอบ = ${fmtNum(m.batchYield)} ${u}`:"ยังไม่ได้กำหนดจำนวนต่อรอบ"} • คงเหลือ ${fmtNum(m.qty)} ${u}</div></div>
+            <button type="button" class="btn rc-edit" data-act="edit" data-id="${esc(m.id)}" ${dis}>แก้ไข</button>
+          </div>
+          <div class="rc-recipe"><div class="muted rc-lbl">ส่วนผสมต่อรอบ</div>${tbl}</div>
+          <div class="rc-foot">${uc?`<span class="muted">ต้นทุนประมาณ ${baht(uc)} / ${u}</span>`:""}${need>0?`<span class="hint">ต้องทำเพิ่ม ${fmtNum(need)} ${u}</span>`:""}</div>
+        </div>`; }).join("");
+  }
+  qSR('[data-search]').addEventListener("submit",e=>{ e.preventDefault(); uiSR.filter.name=readF(qSR('[data-f=name]')); renderSemiRecipe(); });
+  qSR('[data-clear]').addEventListener("click",()=>{ clearF(qSR('[data-f=name]')); uiSR.filter.name=""; renderSemiRecipe(); });
+  qSR('[data-add]').addEventListener("click",()=>openSemi(null));
+  qSR('[data-download]').addEventListener("click",()=>{
+    const head=["ชื่อวัตถุดิบสำเร็จรูป","จำนวนต่อรอบ","หน่วยนับ","คงเหลือ","ควรมีอย่างน้อย","ต้นทุนต่อหน่วย","ส่วนผสมต่อรอบ"];
+    const rows=semiRows().map(m=>[m.name, m.batchYield||"", m.unit, round3(m.qty), round3(m.target||0), Math.round(semiUnitCost(m)*100)/100,
+      recipeOf(m).map(r=>{ const x=MAT().byId(r.matId); return `${x?x.name:"?"} ${r.qty} ${x?x.unit:""}`; }).join("; ")]);
+    downloadCsv(`semi_recipes_${todayStr()}.csv`, buildCsv(head, rows));
+  });
+  qSR('[data-body]').addEventListener("click",e=>{ const b=e.target.closest("button[data-act]"); if(!b||b.disabled) return; const m=SEMI.byId(b.dataset.id); if(m) openSemi(m); });
+
+  let semiId=null;
+  const rawOptions = sel => `<option value="">— เลือกวัตถุดิบ —</option>` + matItems().filter(m=>!m.semi).sort((a,b)=>natCmp(a.name,b.name)).map(m=>`<option value="${esc(m.id)}" ${m.id===sel?"selected":""}>${esc(m.name)} (${esc(m.unit)})</option>`).join("");
+  const smRow = r => { const m=r&&r.matId?MAT().byId(r.matId):null; return `<div class="rcp-row">
+      <select data-rm>${rawOptions(r?r.matId:"")}</select>
+      <input type="number" min="0" step="any" data-rq value="${r&&r.qty?esc(r.qty):""}" placeholder="จำนวน">
+      <span class="muted rcp-u">${esc(m?m.unit:"")}</span>
+      <span class="muted rcp-c">${m&&avgCost(m)?`${baht(avgCost(m))}/${esc(m.unit)}`:(m?'<span class="low">ยังไม่มีราคา</span>':"")}</span>
+      <button type="button" class="icon-btn del" data-rdel title="ลบ" style="width:28px;height:28px">&times;</button></div>`; };
+  function smReadRows(){ const out=[]; $("#smRows").querySelectorAll(".rcp-row").forEach(row=>{ out.push({ matId:row.querySelector("[data-rm]").value, raw:row.querySelector("[data-rq]").value, qty:round3(row.querySelector("[data-rq]").value) }); }); return out; }
+  function smCost(){ const y=Number($("#smYield").value)||0; let c=0; smReadRows().forEach(r=>{ const m=MAT().byId(r.matId); if(m&&r.qty>0) c+=r.qty*avgCost(m); });
+    $("#smCost").textContent = c ? `ต้นทุนต่อรอบประมาณ ${baht(c)}${y?` • ต่อหน่วย ${baht(c/y)}`:""}` : ""; }
+  function openSemi(m){
+    semiId=m?m.id:null;
+    $("#smTitle").textContent = m ? `แก้ไขสูตร — ${m.name}` : "เพิ่มวัตถุดิบสำเร็จรูป";
+    $("#smName").value=m?m.name:""; $("#smUnit").value=m?m.unit||"":""; $("#smYield").value=m&&m.batchYield?m.batchYield:""; $("#smTarget").value=m&&m.target?m.target:"";
+    const rec=m?recipeOf(m):[]; $("#smRows").innerHTML=(rec.length?rec:[null]).map(smRow).join("");
+    $("#smErr").textContent=""; smCost(); open("#mSemi"); setTimeout(()=>$("#smName").focus(),50);
+  }
+  $("#smAdd").addEventListener("click",()=>{ $("#smRows").insertAdjacentHTML("beforeend", smRow(null)); });
+  $("#smRows").addEventListener("click",e=>{ const b=e.target.closest("[data-rdel]"); if(b){ b.closest(".rcp-row").remove(); smCost(); } });
+  $("#smRows").addEventListener("change",e=>{ const s=e.target.closest("[data-rm]"); if(s){ const row=s.closest(".rcp-row"), m=MAT().byId(s.value);
+    row.querySelector(".rcp-u").textContent=m?m.unit:""; row.querySelector(".rcp-c").innerHTML = m&&avgCost(m)?`${baht(avgCost(m))}/${esc(m.unit)}`:(m?'<span class="low">ยังไม่มีราคา</span>':""); } smCost(); });
+  $("#smRows").addEventListener("input",smCost); $("#smYield").addEventListener("input",smCost);
+  $("#smForm").addEventListener("submit",async e=>{
+    e.preventDefault(); const err=$("#smErr"); err.textContent="";
+    const name=$("#smName").value.trim(), unit=$("#smUnit").value.trim(), y=Number($("#smYield").value), tg=Number($("#smTarget").value||0);
+    if(!name||!unit){ err.textContent="กรุณากรอกชื่อและหน่วยนับ"; return; }
+    const nk=v=>String(v||"").trim().toLowerCase().replace(/\s+/g," "); if(matItems().some(m=>m.id!==semiId && nk(m.name)===nk(name))){ err.textContent="มีวัตถุดิบชื่อนี้อยู่แล้ว"; return; }
+    if(!(y>0)){ err.textContent="กรุณาระบุจำนวนที่ได้ต่อ 1 รอบ"; return; }
+    if(!isFinite(tg)||tg<0){ err.textContent="ควรมีอย่างน้อย ต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป"; return; }
+    const recipe=[], seen=new Set();
+    for(const r of smReadRows()){ if(!r.matId && !r.raw) continue;
+      if(!r.matId){ err.textContent="กรุณาเลือกวัตถุดิบให้ครบทุกแถว"; return; }
+      if(!(r.qty>0)){ err.textContent="กรุณาระบุจำนวนวัตถุดิบให้ครบทุกแถว"; return; }
+      if(seen.has(r.matId)){ err.textContent="มีวัตถุดิบซ้ำในสูตร"; return; }
+      seen.add(r.matId); recipe.push({matId:r.matId, qty:r.qty}); }
+    if(!recipe.length){ err.textContent="กรุณาเพิ่มวัตถุดิบอย่างน้อย 1 รายการ"; return; }
+    const prev=semiId?MAT().byId(semiId):null, now=Date.now();
+    const data={ ...(prev?stripId(prev):{ qty:0, image:"", createdAt:now }), name, unit, semi:true, batchYield:round3(y), target:round3(tg), recipe, updatedAt:now };
+    if(!prev || !(Number(prev.qty)>0)){ const tmp={...data}; const uc=semiUnitCost(tmp); if(uc>0){ data.cost=Math.round(uc*10000)/10000; data.avgCost=data.cost; } }
+    const btn=$("#smSave"); btn.disabled=true;
+    try{ await save("materials", semiId||newId("mat"), data); close("#mSemi"); toast(prev?"บันทึกสูตรแล้ว":`เพิ่ม ${name} แล้ว`); }
+    catch(er){ err.textContent=errMsg(er); } finally{ btn.disabled=false; }
+  });
+
+  /* ----- รายการวัตถุดิบสำเร็จรูป (สต๊อก) ----- */
+  const uiSL = { filter:{name:"",status:""}, page:1, perPage:20 };
+  const secSL = $("#view-semi-list");
+  secSL.innerHTML = `
+    <div class="content">
+      <div class="card title-card"><span class="crumb">วัตถุดิบสำเร็จรูป ›</span> รายการวัตถุดิบสำเร็จรูป</div>
+      <form class="card search-card" data-search autocomplete="off">
+        <div class="field f-name"><label>ชื่อวัตถุดิบสำเร็จรูป</label>${selHtml("name","ค้นหาชื่อ (เลือกได้หลายรายการ)")}</div>
+        <div class="field"><label>สถานะ</label><select data-f="status"><option value="">ทั้งหมด</option><option value="need">ต้องทำเพิ่ม</option><option value="ok">เพียงพอ</option><option value="out">หมด</option></select></div>
+        ${prepBtns}
+      </form>
+      <div class="card table-card">
+        <table>
+          <thead><tr>
+            <th>ชื่อวัตถุดิบสำเร็จรูป</th>
+            <th class="num">คงเหลือ</th>
+            <th class="center">หน่วยนับ</th>
+            <th class="num">ควรมีอย่างน้อย</th>
+            <th class="num">ต้องทำเพิ่ม</th>
+            <th class="num">1 รอบได้</th>
+            <th class="num">ต้นทุนเฉลี่ย <span class="sub">(ต่อหน่วย)</span></th>
+            <th class="center">สถานะ</th>
+            <th class="upd-h">เวลาอัปเดทล่าสุด</th>
+            <th class="center">ดำเนินการ</th>
+          </tr></thead>
+          <tbody data-body></tbody>
+        </table>
+      </div>
+      <div class="status" data-status></div>
+    </div>
+    ${footerHtml}`;
+  const qSL = s => secSL.querySelector(s);
+  const slStatus = m => (Number(m.qty)||0)<=0 ? "out" : SEMI.need(m)>0 ? "need" : "ok";
+  const SL_ST = { out:["out","หมด"], need:["lowb","ต้องทำเพิ่ม"], ok:["ok","เพียงพอ"] };
+  const slRows = () => { const f=uiSL.filter; return semiItems().filter(m=>mt(f.name,m.name) && (!f.status || slStatus(m)===f.status || (f.status==="need" && slStatus(m)==="out"))).sort((a,b)=>natCmp(a.name,b.name)); };
+  const usedInCookies = id => fgItems().filter(it=>recipeOf(it).some(r=>r.matId===id));
+  function renderSemiList(){
+    fillSelect(qSL('[data-f=name]'), [...new Set(semiItems().map(m=>m.name))].sort(natCmp));
+    const rows=slRows(), {view,pages}=paginate(rows,uiSL), dis=state.canWrite?"":"disabled";
+    qSL('[data-total]').textContent=rows.length.toLocaleString("th-TH");
+    qSL('[data-add]').disabled=!state.canWrite;
+    qSL('[data-body]').innerHTML = !semiItems().length ? `<tr><td colspan="10" class="empty-state">ยังไม่มีวัตถุดิบสำเร็จรูป กด “เพิ่มรายการ” เพื่อเริ่มต้น</td></tr>`
+      : !view.length ? `<tr><td colspan="10" class="empty-state">ไม่พบรายการที่ตรงกับการค้นหา</td></tr>`
+      : view.map(m=>{ const st=slStatus(m), need=SEMI.need(m), u=esc(m.unit||""), ac=avgCost(m)||semiUnitCost(m), used=usedInCookies(m.id).length;
+        return `<tr>
+          <td class="pname">${esc(m.name)}${used?`<div class="muted" style="font-weight:400;font-size:12.5px">ใช้ในสูตรคุกกี้ ${used} รายการ</div>`:""}</td>
+          <td class="num"><b>${fmtNum(m.qty)}</b></td>
+          <td class="center"><span class="chip">${u}</span></td>
+          <td class="num">${fmtNum(m.target||0)}</td>
+          <td class="num ${need>0?"low":""}">${need>0?fmtNum(need):"0"}</td>
+          <td class="num">${m.batchYield?`${fmtNum(m.batchYield)} ${u}`:"-"}</td>
+          <td class="num">${ac?`${baht(ac)} <span class="muted">/ ${u}</span>`:"-"}</td>
+          <td class="center"><span class="badge ${SL_ST[st][0]}">${SL_ST[st][1]}</span></td>
+          <td class="muted upd">${fmtDate(m.updatedAt)}</td>
+          <td><div class="acts">
+            <button class="icon-btn in" title="สร้างการผลิต" data-act="prod" data-id="${esc(m.id)}" ${semiReady(m)?dis:"disabled"}>${PLAY}</button>
+            <button class="icon-btn edit" title="แก้ไขสูตร" data-act="edit" data-id="${esc(m.id)}" ${dis}>${ICON.edit}</button>
+            <button class="icon-btn del" title="ลบ" data-act="del" data-id="${esc(m.id)}" ${dis}>${ICON.del}</button>
+          </div></td></tr>`; }).join("");
+    renderPager(qSL('[data-pager]'), uiSL.page, pages);
+  }
+  qSL('[data-search]').addEventListener("submit",e=>{ e.preventDefault(); uiSL.filter.name=readF(qSL('[data-f=name]')); uiSL.filter.status=qSL('[data-f=status]').value; uiSL.page=1; renderSemiList(); });
+  qSL('[data-clear]').addEventListener("click",()=>{ clearF(qSL('[data-f=name]')); qSL('[data-f=status]').value=""; uiSL.filter={name:"",status:""}; uiSL.page=1; renderSemiList(); });
+  qSL('[data-perpage]').addEventListener("change",e=>{ uiSL.perPage=+e.target.value; uiSL.page=1; renderSemiList(); });
+  qSL('[data-pager]').addEventListener("click",e=>{ const b=e.target.closest("button[data-p]"); if(!b||b.disabled) return; uiSL.page=+b.dataset.p; renderSemiList(); });
+  qSL('[data-add]').addEventListener("click",()=>openSemi(null));
+  qSL('[data-download]').addEventListener("click",()=>{
+    const head=["ชื่อวัตถุดิบสำเร็จรูป","คงเหลือ","หน่วยนับ","ควรมีอย่างน้อย","ต้องทำเพิ่ม","1 รอบได้","ต้นทุนเฉลี่ยต่อหน่วย","สถานะ","เวลาอัปเดทล่าสุด"];
+    const rows=slRows().map(m=>[m.name, round3(m.qty), m.unit, round3(m.target||0), SEMI.need(m), m.batchYield||"", Math.round((avgCost(m)||semiUnitCost(m))*100)/100, SL_ST[slStatus(m)][1], fmtDate(m.updatedAt)]);
+    downloadCsv(`semi_materials_${todayStr()}.csv`, buildCsv(head, rows));
+  });
+  qSL('[data-body]').addEventListener("click",e=>{
+    const b=e.target.closest("button[data-act]"); if(!b||b.disabled) return; const m=SEMI.byId(b.dataset.id); if(!m) return;
+    if(b.dataset.act==="prod") openSO([m.id]);
+    if(b.dataset.act==="edit") openSemi(m);
+    if(b.dataset.act==="del"){
+      const used=usedInCookies(m.id), open=(state.data.semiOrders||[]).filter(o=>o.itemId===m.id && o.status!=="done").length;
+      if(used.length) return toast(`ลบไม่ได้ — ใช้อยู่ในสูตร: ${used.map(x=>x.name).join(", ")}`);
+      if(open) return toast(`ลบไม่ได้ — มีรายการผลิตที่ยังไม่เสร็จ ${open} รายการ`);
+      confirmBox("ลบรายการ", `ต้องการลบ <b>${esc(m.name)}</b> ใช่หรือไม่?${Number(m.qty)>0?`<div class="hint" style="margin-top:6px">ยังมีคงเหลือ ${fmtNum(m.qty)} ${esc(m.unit||"")}</div>`:""}`, "ลบ", async ()=>{ await remove("materials", m.id); toast("ลบรายการแล้ว"); });
+    }
+  });
+
+  /* ----- สร้างการผลิต (วัตถุดิบสำเร็จรูป) ----- */
+  const soReserved = () => { const r={}; [...(state.data.semiOrders||[]), ...(state.data.prodOrders||[])].forEach(o=>{ if(o.status==="done") return; (o.mats||[]).forEach(x=>{ r[x.matId]=round3((r[x.matId]||0)+(Number(x.qty)||0)); }); }); return r; };
+  const pickForSemi = () => openPicker({ title:"สร้างการผลิต — เลือกวัตถุดิบสำเร็จรูป", nextLabel:"ถัดไป",
+    items:()=>semiItems(), byId:id=>SEMI.byId(id), badge:m=>semiReady(m)?SEMI.badge(m):'<span class="badge lowb">ยังไม่มีสูตร</span>',
+    canPick:m=>state.canWrite && semiReady(m),
+    empty:"ยังไม่มีวัตถุดิบสำเร็จรูป เพิ่มสูตรได้ที่เมนู “วัตถุดิบสำเร็จรูป › ส่วนผสม”", onNext:list=>openSO(list.map(x=>x.id)) });
+  let soIds=[];
+  function soRounds(){ const r={}; $("#soRows").querySelectorAll("input[data-sor]").forEach(i=>{ r[i.dataset.sor]=Math.max(0,Number(i.value)||0); }); return r; }
+  function soNeeds(rounds){
+    const tot={}, order=[];
+    soIds.forEach(id=>{ const m=SEMI.byId(id); if(!m) return; const n=rounds[id]||0;
+      recipeOf(m).forEach(r=>{ if(!(r.matId in tot)){ tot[r.matId]=0; order.push(r.matId); } tot[r.matId]=round3(tot[r.matId]+(Number(r.qty)||0)*n); }); });
+    const res=soReserved();
+    return order.map(id=>{ const m=MAT().byId(id), need=tot[id], avail=m?round3((Number(m.qty)||0)-(res[id]||0)):0; return { id, m, need, avail, short:!m||need>avail }; });
+  }
+  function renderSO(){
+    const rounds=soRounds();
+    soIds.forEach(id=>{ const m=SEMI.byId(id), el=$(`#soRows [data-soy="${CSS.escape(id)}"]`); if(m&&el) el.textContent=`จะได้ ${fmtNum(round3((rounds[id]||0)*(Number(m.batchYield)||0)))} ${m.unit||""}`; });
+    const list=soNeeds(rounds);
+    $("#soMats").innerHTML = list.length ? list.map(x=>`<tr>
+        <td class="pname" style="text-align:left">${esc(x.m?x.m.name:"(วัตถุดิบถูกลบ)")}</td>
+        <td class="num">${fmtNum(x.need)} ${esc(x.m?x.m.unit:"")}</td>
+        <td class="num">${x.m?`${fmtNum(x.avail)} ${esc(x.m.unit||"")}`:"-"}</td>
+        <td class="center">${x.short?'<span class="badge out">ไม่พอ</span>':'<span class="badge ok">พอ</span>'}</td></tr>`).join("") : `<tr><td colspan="4" class="empty-state">ไม่มีรายการ</td></tr>`;
+    const zero=soIds.filter(id=>!(rounds[id]>0)).length, short=list.filter(x=>x.short).length;
+    $("#soErr").textContent = !soIds.length ? "" : zero ? "กรุณาระบุจำนวนรอบให้ครบทุกรายการ" : short ? `วัตถุดิบไม่พอ ${short} รายการ — รับเข้าวัตถุดิบก่อน หรือลดจำนวนรอบ` : "";
+    $("#soSave").disabled = !soIds.length || zero>0 || short>0 || !state.canWrite;
+  }
+  function openSO(ids){
+    soIds=ids.filter(id=>SEMI.byId(id));
+    $("#soTitle").textContent = soIds.length>1 ? `สร้างการผลิต ${soIds.length} รายการ` : "สร้างการผลิต";
+    $("#soRows").innerHTML = soIds.map(id=>{ const m=SEMI.byId(id), need=SEMI.need(m), y=Number(m.batchYield)||1, def=need>0?Math.max(1,Math.ceil(need/y)):1;
+      return `<div class="sell-row">
+        <div class="sell-main"><div class="pname">${esc(m.name)}</div><div class="muted">1 รอบ = ${fmtNum(m.batchYield)} ${esc(m.unit||"")} • คงเหลือ ${fmtNum(m.qty)} ${esc(m.unit||"")} • <span data-soy="${esc(id)}"></span></div></div>
+        <div class="sell-qty"><input type="number" min="0" step="any" value="${def}" data-sor="${esc(id)}"><span class="muted">รอบ</span></div>
+        <button type="button" class="icon-btn del" data-unso="${esc(id)}" title="เอาออก" style="width:28px;height:28px">&times;</button>
+      </div>`; }).join("") || '<div class="hint">ไม่มีรายการ</div>';
+    $("#soNote").value=""; open("#mSO"); renderSO(); setTimeout(()=>{ const f=$("#soRows input"); if(f) f.select(); },50);
+  }
+  $("#soRows").addEventListener("input",renderSO);
+  $("#soRows").addEventListener("click",e=>{ const b=e.target.closest("[data-unso]"); if(!b) return; soIds=soIds.filter(x=>x!==b.dataset.unso); b.closest(".sell-row").remove(); renderSO(); });
+  $("#soForm").addEventListener("submit",async e=>{
+    e.preventDefault(); renderSO(); if($("#soSave").disabled) return;
+    const rounds=soRounds(), note=$("#soNote").value.trim(), btn=$("#soSave"); btn.disabled=true;
+    try{
+      for(const id of soIds){ const m=SEMI.byId(id), n=rounds[id], now=Date.now();
+        const mats=recipeOf(m).map(r=>{ const x=MAT().byId(r.matId); return { matId:r.matId, name:x?x.name:"", unit:x?x.unit:"", qty:round3((Number(r.qty)||0)*n) }; });
+        await save("semiOrders", newId("so"), { itemId:m.id, name:m.name, unit:m.unit||"", rounds:round3(n), yield:round3(n*(Number(m.batchYield)||0)), mats, status:"todo", note, createdAt:now, updatedAt:now }); }
+      close("#mSO"); toast(`สร้างการผลิต ${soIds.length} รายการแล้ว`);
+    }catch(er){ $("#soErr").textContent=errMsg(er); } finally{ btn.disabled=false; }
+  });
+
+  const uiSO = { filter:{name:"",from:monthRange(0)[0],to:monthRange(0)[1]}, tab:"todo", page:1, perPage:20 };
+  const secSO = $("#view-semi-prod");
+  secSO.innerHTML = `
+    <div class="content">
+      <div class="card title-card"><span class="crumb">วัตถุดิบสำเร็จรูป ›</span> สร้างการผลิต</div>
+      <div class="po-tabs" role="tablist" data-tabs>
+        <button type="button" class="po-tab" data-tab="todo" role="tab">รอผลิต <span class="po-cnt" data-cnt="todo">0</span></button>
+        <button type="button" class="po-tab" data-tab="doing" role="tab">กำลังผลิต <span class="po-cnt" data-cnt="doing">0</span></button>
+        <button type="button" class="po-tab" data-tab="done" role="tab">ผลิตเสร็จ <span class="po-cnt" data-cnt="done">0</span></button>
+      </div>
+      <form class="card search-card po-search" data-search autocomplete="off">
+        <div class="field f-name"><label>ชื่อวัตถุดิบสำเร็จรูป</label>${selHtml("name","ค้นหาชื่อ (เลือกได้หลายรายการ)")}</div>
+        <div class="field f-range"><label>ช่วงวันที่</label>${drpHtml()}</div>
+        ${prepBtns}
+      </form>
+      <div class="card table-card">
+        <table>
+          <thead><tr>
+            <th>ชื่อวัตถุดิบสำเร็จรูป</th>
+            <th class="num" style="width:110px">จำนวนรอบ</th>
+            <th class="num" style="width:130px">จำนวนที่จะได้</th>
+            <th class="po-mats-h">วัตถุดิบที่ต้องใช้</th>
+            <th class="center" style="width:120px">สถานะ</th>
+            <th class="upd-h">เวลาอัปเดทล่าสุด</th>
+            <th class="center" style="width:110px">ดำเนินการ</th>
+          </tr></thead>
+          <tbody data-body></tbody>
+        </table>
+      </div>
+      <div class="status" data-status></div>
+    </div>
+    ${footerHtml}`;
+  const qSO = s => secSO.querySelector(s);
+  qSO('[data-f=from]').value=uiSO.filter.from; qSO('[data-f=to]').value=uiSO.filter.to;
+  const drpSO = initDrp(qSO('[data-drp]'), () => { uiSO.filter.from=qSO('[data-f=from]').value; uiSO.filter.to=qSO('[data-f=to]').value; uiSO.page=1; renderSOList(); });
+  const soSearched = () => { const f=uiSO.filter; return (state.data.semiOrders||[]).filter(o=>{ const m=SEMI.byId(o.itemId), name=m?m.name:o.name, d=dayOf(o.createdAt); return mt(f.name,name) && (!f.from||d>=f.from) && (!f.to||d<=f.to); }); };
+  const soRows = () => { const t=uiSO.tab; return soSearched().filter(o=>(o.status||"todo")===t).sort((a,b)=> t==="done" ? (b.doneAt||b.updatedAt||0)-(a.doneAt||a.updatedAt||0) : t==="todo" ? (a.createdAt||0)-(b.createdAt||0) : (b.updatedAt||0)-(a.updatedAt||0)); };
+  function renderSOList(){
+    drpSO.sync();
+    const all=state.data.semiOrders||[];
+    fillSelect(qSO('[data-f=name]'), [...new Set(all.map(o=>{ const m=SEMI.byId(o.itemId); return m?m.name:o.name; }).filter(Boolean))].sort(natCmp));
+    const cnt={todo:0,doing:0,done:0}; soSearched().forEach(o=>{ cnt[o.status||"todo"]++; });
+    secSO.querySelectorAll("[data-cnt]").forEach(el=>{ el.textContent=cnt[el.dataset.cnt]||0; });
+    secSO.querySelectorAll("[data-tab]").forEach(b=>{ const on=b.dataset.tab===uiSO.tab; b.classList.toggle("on",on); b.setAttribute("aria-selected",on); });
+    const rows=soRows(), {view,pages}=paginate(rows,uiSO), dis=state.canWrite?"":"disabled";
+    qSO('[data-total]').textContent=rows.length.toLocaleString("th-TH");
+    qSO('[data-body]').innerHTML = !all.length ? `<tr><td colspan="7" class="empty-state">ยังไม่มีรายการผลิต กด “เพิ่มรายการ” เพื่อสร้าง</td></tr>`
+      : !view.length ? `<tr><td colspan="7" class="empty-state">ไม่มีรายการ${(PO_ST[uiSO.tab]||PO_ST.todo)[1]}${uiSO.filter.name||uiSO.filter.from||uiSO.filter.to?"ที่ตรงกับการค้นหา":""}</td></tr>`
+      : view.map(o=>{ const m=SEMI.byId(o.itemId), st=o.status||"todo";
+        const mats=(o.mats||[]).map(x=>{ const r=MAT().byId(x.matId); return `<span>${esc(r?r.name:x.name)}</span><span class="q">${fmtNum(x.qty)} ${esc(r?r.unit:x.unit)}</span>`; }).join("");
+        const act = st==="todo" ? `<button class="icon-btn edit" title="เริ่มผลิต" data-act="start" data-id="${esc(o.id)}" ${dis}>${PLAY}</button>`
+                  : st==="doing" ? `<button class="icon-btn in" title="ผลิตเสร็จ (ตัดวัตถุดิบ + เพิ่มวัตถุดิบสำเร็จรูปเข้าสต๊อก)" data-act="done" data-id="${esc(o.id)}" ${m?dis:"disabled"}>${ICON.check}</button>` : "";
+        return `<tr>
+          <td class="pname" style="min-width:130px">${esc(m?m.name:o.name)}${m?"":' <span class="hint">(ถูกลบแล้ว)</span>'}${o.note?`<div class="muted" style="font-weight:400;font-size:12.5px">${esc(o.note)}</div>`:""}</td>
+          <td class="num">${fmtNum(o.rounds)}</td>
+          <td class="num">${fmtNum(o.yield)} ${esc(o.unit||"")}</td>
+          <td>${mats?`<div class="po-mats">${mats}</div>`:'<span class="muted">-</span>'}</td>
+          <td class="center">${poBadge(o)}</td>
+          <td class="muted upd">${fmtDate(o.updatedAt)}</td>
+          <td><div class="acts">${act}<button class="icon-btn del" title="ลบ" data-act="del" data-id="${esc(o.id)}" ${st==="done"?"disabled":dis}>${ICON.del}</button></div></td>
+        </tr>`; }).join("");
+    renderPager(qSO('[data-pager]'), uiSO.page, pages);
+    qSO('[data-add]').disabled=!state.canWrite;
+  }
+  qSO('[data-search]').addEventListener("submit",e=>{ e.preventDefault(); Object.keys(uiSO.filter).forEach(k=>{ uiSO.filter[k]=readF(qSO(`[data-f=${k}]`)); });
+    if(uiSO.filter.from && uiSO.filter.to && uiSO.filter.from>uiSO.filter.to){ const x=uiSO.filter.from; uiSO.filter.from=uiSO.filter.to; uiSO.filter.to=x; } uiSO.page=1; renderSOList(); });
+  qSO('[data-clear]').addEventListener("click",()=>{ secSO.querySelectorAll("[data-f]").forEach(clearF); Object.keys(uiSO.filter).forEach(k=>uiSO.filter[k]=""); uiSO.page=1; renderSOList(); });
+  qSO('[data-perpage]').addEventListener("change",e=>{ uiSO.perPage=+e.target.value; uiSO.page=1; renderSOList(); });
+  qSO('[data-pager]').addEventListener("click",e=>{ const b=e.target.closest("button[data-p]"); if(!b||b.disabled) return; uiSO.page=+b.dataset.p; renderSOList(); });
+  qSO('[data-add]').addEventListener("click",pickForSemi);
+  qSO('[data-tabs]').addEventListener("click",e=>{ const b=e.target.closest("[data-tab]"); if(!b) return; uiSO.tab=b.dataset.tab; uiSO.page=1; renderSOList(); });
+  qSO('[data-download]').addEventListener("click",()=>{
+    const head=["ชื่อวัตถุดิบสำเร็จรูป","จำนวนรอบ","จำนวนที่จะได้","หน่วยนับ","วัตถุดิบที่ต้องใช้","สถานะ","หมายเหตุ","วันที่สร้าง","เวลาอัปเดทล่าสุด"];
+    const rows=soRows().map(o=>[o.name, round3(o.rounds), round3(o.yield), o.unit, (o.mats||[]).map(x=>`${x.name} ${round3(x.qty)} ${x.unit}`).join(", "), (PO_ST[o.status]||PO_ST.todo)[1], o.note||"", fmtDate(o.createdAt), fmtDate(o.updatedAt)]);
+    downloadCsv(`semi_production_${todayStr()}.csv`, buildCsv(head, rows));
+  });
+  qSO('[data-body]').addEventListener("click",e=>{
+    const b=e.target.closest("button[data-act]"); if(!b||b.disabled) return;
+    const o=(state.data.semiOrders||[]).find(x=>x.id===b.dataset.id); if(!o) return;
+    const a=b.dataset.act;
+    if(a==="start") save("semiOrders", o.id, {...stripId(o), status:"doing", startedAt:Date.now(), updatedAt:Date.now()}).then(()=>toast(`เริ่มผลิต ${o.name} แล้ว`)).catch(er=>toast(errMsg(er)));
+    if(a==="done"){
+      const m=SEMI.byId(o.itemId); if(!m) return;
+      const lines=(o.mats||[]).map(x=>{ const r=MAT().byId(x.matId); return `${esc(r?r.name:x.name)} −${fmtNum(x.qty)} ${esc(r?r.unit:x.unit)}`; }).join(", ");
+      confirmBox("ผลิตเสร็จ", `ผลิต <b>${esc(m.name)} ${fmtNum(o.yield)} ${esc(m.unit||"")}</b> เสร็จแล้วใช่หรือไม่?<div class="hint" style="margin-top:6px">ระบบจะเพิ่มเข้าสต๊อก: ${fmtNum(m.qty)} → ${fmtNum(round3(round3(m.qty)+round3(o.yield)))} ${esc(m.unit||"")}<br>และตัดวัตถุดิบ: ${lines||"-"}</div>`, "ผลิตเสร็จ", async ()=>{
+        for(const x of (o.mats||[])){ const r=MAT().byId(x.matId);
+          if(!r){ const er=new Error(); er.userMsg=`ไม่พบวัตถุดิบ ${x.name}`; throw er; }
+          if(round3(x.qty)>round3(r.qty)){ const er=new Error(); er.userMsg=`${r.name} คงเหลือไม่พอ (เหลือ ${fmtNum(r.qty)} ${r.unit})`; throw er; } }
+        const now=Date.now(), tag=`ผลิต ${m.name} ${fmtNum(o.rounds)} รอบ`+(o.note?` • ${o.note}`:""); let cost=0;
+        for(const x of (o.mats||[])){ const r=MAT().byId(x.matId), n=round3(x.qty); cost+=n*avgCost(r);
+          await save("moves", newId("mv"), { type:"out", itemId:r.id, name:r.name, unit:r.unit, qty:n, note:tag, at:now });
+          await save("materials", r.id, {...stripId(r), qty:round3(round3(r.qty)-n), updatedAt:now}); }
+        const cur=SEMI.byId(o.itemId), y=round3(o.yield), up=y?Math.round(cost/y*10000)/10000:0, q0=Math.max(0,round3(cur.qty)), nq=round3(q0+y);
+        const upd={...stripId(cur), qty:nq, updatedAt:now};
+        if(up>0 && nq>0){ upd.avgCost=Math.round(((q0*avgCost(cur))+(y*up))/nq*10000)/10000; upd.cost=upd.avgCost; }
+        await save("moves", newId("mv"), { type:"in", itemId:cur.id, name:cur.name, unit:cur.unit, qty:y, unitPrice:up||null, note:tag, at:now });
+        await save("materials", cur.id, upd);
+        await save("semiOrders", o.id, {...stripId(o), status:"done", doneAt:now, updatedAt:now});
+        toast(`เพิ่ม ${cur.name} ${fmtNum(y)} ${cur.unit||""} เข้าสต๊อกแล้ว`);
+      });
+      $("#cfOk").className="btn green";
+    }
+    if(a==="del") confirmBox("ลบรายการ", `ต้องการลบรายการผลิต <b>${esc(o.name)} ${fmtNum(o.rounds)} รอบ</b> ใช่หรือไม่?`, "ลบ", async ()=>{ await remove("semiOrders", o.id); toast("ลบรายการแล้ว"); });
+  });
+
+  /* ----- ดรอปดาวน์ค้นหาได้ (คลุมเครือ) สำหรับเลือกวัตถุดิบในสูตร: ใช้ <select data-rm> เดิมเป็นค่าจริง ----- */
+  (function(){
+    let cur=null; const list=document.createElement("div"); list.className="cb-list"; list.hidden=true; document.body.appendChild(list);
+    const optsOf = sel => [...sel.options].filter(o=>o.value).map(o=>({v:o.value, t:o.textContent}));
+    function place(){ if(!cur) return; const r=cur.inp.getBoundingClientRect(), below=window.innerHeight-r.bottom;
+      list.style.left=r.left+"px"; list.style.width=r.width+"px";
+      if(below<240 && r.top>below){ list.style.top=""; list.style.bottom=(window.innerHeight-r.top+4)+"px"; } else { list.style.bottom=""; list.style.top=(r.bottom+4)+"px"; } }
+    function render(){ if(!cur) return; const q=cur.inp.value===cur.label ? "" : cur.inp.value;
+      cur.shown=optsOf(cur.sel).map(o=>({...o, sc:fuzzy(o.t,q)})).filter(o=>o.sc!==null).sort((a,b)=>q?b.sc-a.sc:natCmp(a.t,b.t));
+      if(cur.act>=cur.shown.length) cur.act=cur.shown.length-1; if(cur.act<0) cur.act=0;
+      list.innerHTML = cur.shown.length ? cur.shown.map((o,i)=>`<div class="cb-opt${i===cur.act?" on":""}${o.v===cur.sel.value?" sel":""}" data-i="${i}">${esc(o.t)}</div>`).join("") : '<div class="cb-none">ไม่พบวัตถุดิบ</div>';
+      const on=list.querySelector(".cb-opt.on"); if(on) on.scrollIntoView({block:"nearest"}); place(); }
+    function openFor(w){ if(cur&&cur!==w) closeList(); cur=w; cur.act=Math.max(0, optsOf(w.sel).sort((a,b)=>natCmp(a.t,b.t)).findIndex(o=>o.v===w.sel.value)); list.hidden=false; w.inp.select(); render(); }
+    function closeList(){ if(!cur) return; cur.inp.value=cur.label; cur=null; list.hidden=true; }
+    function choose(o){ const w=cur; if(!w||!o) return; w.sel.value=o.v; w.label=o.t; w.inp.value=o.t; cur=null; list.hidden=true; w.sel.dispatchEvent(new Event("change",{bubbles:true})); }
+    function enhance(sel){
+      if(sel.dataset.cb) return; sel.dataset.cb="1"; sel.style.display="none";
+      const inp=document.createElement("input"); inp.type="text"; inp.className="cb-inp"; inp.autocomplete="off"; inp.placeholder="พิมพ์ค้นหาวัตถุดิบ…";
+      const w={ sel, inp, label:"", act:0, shown:[] }; const o=sel.selectedOptions[0]; w.label = o&&o.value ? o.textContent : ""; inp.value=w.label;
+      sel.after(inp);
+      inp.addEventListener("focus",()=>openFor(w)); inp.addEventListener("click",()=>{ if(cur!==w) openFor(w); });
+      inp.addEventListener("input",()=>{ if(cur!==w) openFor(w); cur.act=0; render(); });
+      inp.addEventListener("keydown",e=>{ if(cur!==w) return;
+        if(e.key==="ArrowDown"){ e.preventDefault(); cur.act=Math.min(cur.shown.length-1,cur.act+1); render(); }
+        else if(e.key==="ArrowUp"){ e.preventDefault(); cur.act=Math.max(0,cur.act-1); render(); }
+        else if(e.key==="Enter"){ e.preventDefault(); choose(cur.shown[cur.act]); const q=inp.closest(".rcp-row")?.querySelector("[data-rq]"); if(q) q.focus(); }
+        else if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); closeList(); inp.blur(); }
+        else if(e.key==="Tab"){ closeList(); } });
+    }
+    list.addEventListener("mousedown",e=>{ e.preventDefault(); const d=e.target.closest(".cb-opt"); if(d&&cur) choose(cur.shown[+d.dataset.i]); });
+    document.addEventListener("mousedown",e=>{ if(cur && e.target!==cur.inp && !list.contains(e.target)) closeList(); });
+    window.addEventListener("resize",place); document.addEventListener("scroll",place,true);
+    const scan = root => root.querySelectorAll && root.querySelectorAll("select[data-rm]:not([data-cb])").forEach(enhance);
+    new MutationObserver(ms=>{ if(cur && !document.body.contains(cur.inp)){ cur=null; list.hidden=true; } ms.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1){ if(n.matches&&n.matches("select[data-rm]")) enhance(n); scan(n); } })); }).observe(document.body,{childList:true,subtree:true});
+    scan(document);
+  })();
+
   /* ----- sidebar toggle ----- */
   (function(){
     let pref=null; try{ const v=localStorage.getItem("sb_mini"); if(v!==null) pref=v==="1"; }catch(e){}
@@ -3167,12 +3739,12 @@
     const g=a.closest(".nav-group"); return { view:a.dataset.view, label:a.getAttribute("title")||a.textContent.trim(), group: g ? g.querySelector(".grp-head").getAttribute("title") : "" }; });
   const navLabel = v => { const m=ALL_VIEWS_P().find(x=>x.view===v); return m ? (m.group && m.group!==m.label ? `${m.group} › ${m.label}` : m.label) : v; };
   const P = (v,e,d) => ({v:v?1:0, e:e?1:0, d:d?1:0});
-  const permsFrom = fn => { const o={}; ["dashboard","products","sale-bills","sale-report","fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","fg-count","prod-create","prep-need","set-users","set-roles","set-perms","set-logs","set-billno"].forEach(v=>o[v]=fn(v)); return o; };
+  const permsFrom = fn => { const o={}; ["dashboard","products","sale-bills","sale-report","fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","semi-prod","semi-list","semi-recipe","prod-create","prep-need","set-users","set-roles","set-perms","set-logs","set-billno"].forEach(v=>o[v]=fn(v)); return o; };
   const DEFAULT_ROLES = [
     { id:"role-owner", name:"เจ้าของร้าน", desc:"ใช้งานได้ทุกเมนู รวมถึงการตั้งค่าระบบ", system:true, perms:permsFrom(()=>P(1,1,1)) },
     { id:"role-manager", name:"ผู้จัดการ", desc:"ดูแลสต๊อก การผลิต และการขาย ดูการตั้งค่าได้อย่างเดียว", perms:permsFrom(v=> v.startsWith("set-") ? P(1,0,0) : P(1,1,1)) },
     { id:"role-sales", name:"พนักงานขาย", desc:"ขายสินค้า ดูบิล และตรวจนับสินค้าสำเร็จรูป", perms:permsFrom(v=> ["products","sale-bills","fg-count"].includes(v) ? P(1,1,0) : ["dashboard","sale-report","finished"].includes(v) ? P(1,0,0) : P(0,0,0)) },
-    { id:"role-kitchen", name:"พนักงานครัว", desc:"รับเข้า/นำออกวัตถุดิบ ผลิตคุกกี้ และตรวจนับ", perms:permsFrom(v=> v==="dashboard" ? P(1,0,0) : ["fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","fg-count","prod-create","prep-need"].includes(v) ? P(1,1,0) : P(0,0,0)) },
+    { id:"role-kitchen", name:"พนักงานครัว", desc:"รับเข้า/นำออกวัตถุดิบ ผลิตคุกกี้ และตรวจนับ", perms:permsFrom(v=> v==="dashboard" ? P(1,0,0) : ["fg-in","fg-out","finished","mat-in","mat-out","materials","mat-count","semi-count","fg-count","semi-prod","semi-list","semi-recipe","prod-create","prep-need"].includes(v) ? P(1,1,0) : P(0,0,0)) },
   ];
   const rolesList = () => { const r=state.data.roles||[]; return r.length ? r : DEFAULT_ROLES; };
   const roleById = id => rolesList().find(r=>r.id===id) || null;
@@ -3182,7 +3754,7 @@
   const currentRole = () => { const u=currentUser(); if(u) return roleById(u.roleId) || roleById("role-sales");
     if(state.isOwner || !state.db) return roleById("role-owner") || DEFAULT_ROLES[0];
     return roleById("role-sales") || DEFAULT_ROLES[2]; };
-  const permOf = v => { const r=currentRole(); if(!r) return P(1,1,1); if(r.id==="role-owner") return P(1,1,1); const p=(r.perms||{})[v]; return p ? {v:!!p.v, e:!!p.v&&!!p.e, d:!!p.v&&!!p.d} : P(0,0,0); };
+  const permOf = v => { const r=currentRole(); if(!r) return P(1,1,1); if(r.id==="role-owner") return P(1,1,1); const PFB={"semi-count":"mat-count","semi-prod":"prod-create","semi-list":"prep-need","semi-recipe":"prep-need"}; const p=(r.perms||{})[v] || (PFB[v] ? (r.perms||{})[PFB[v]] : null); return p ? {v:!!p.v, e:!!p.v&&!!p.e, d:!!p.v&&!!p.d} : P(0,0,0); };
   function applyPerms(){
     document.querySelectorAll(".sidebar .nav-item[data-view]").forEach(a=>{ a.style.display = permOf(a.dataset.view).v ? "" : "none"; });
     document.querySelectorAll(".sidebar .nav-group").forEach(g=>{ const any=[...g.querySelectorAll(".sub .nav-item[data-view]")].some(a=>a.style.display!=="none"); g.style.display = any ? "" : "none"; });
@@ -3191,7 +3763,7 @@
     document.body.classList.toggle("no-del", !p.d);
   }
   // ----- audit log
-  const COLLABEL = { settings:"การตั้งค่า", finished:"สินค้าสำเร็จรูป", fgMoves:"ความเคลื่อนไหวสินค้า", materials:"วัตถุดิบ", moves:"ความเคลื่อนไหววัตถุดิบ", prodOrders:"รายการผลิต", prepJobs:"เตรียมวัตถุดิบ", bills:"บิลขาย", users:"บัญชีผู้ใช้งาน", roles:"บทบาท", products:"สินค้า" };
+  const COLLABEL = { settings:"การตั้งค่า", finished:"สินค้าสำเร็จรูป", fgMoves:"ความเคลื่อนไหวสินค้า", materials:"วัตถุดิบ", moves:"ความเคลื่อนไหววัตถุดิบ", prodOrders:"รายการผลิต", semiOrders:"การผลิตวัตถุดิบสำเร็จรูป", prepJobs:"เตรียมวัตถุดิบ", bills:"บิลขาย", users:"บัญชีผู้ใช้งาน", roles:"บทบาท", products:"สินค้า" };
   function describeDoc(key, d, prev){
     if(!d) return "";
     const q = x => `${fmtNum(x.qty)} ${x.unit||""}`.trim();
@@ -3199,6 +3771,7 @@
     if(key==="moves") return `${d.type==="in"?"รับเข้า":d.type==="out"?"นำออก":d.type==="count"?"ตรวจนับ":"ปรับยอด"} ${d.name} ${q(d)}${d.unitPrice!=null?` @ ฿${d.unitPrice}`:""}${d.note?` • ${d.note}`:""}`;
     if(key==="finished"||key==="materials"){ const ch = prev && round3(prev.qty)!==round3(d.qty) ? ` (คงเหลือ ${fmtNum(prev.qty)} → ${fmtNum(d.qty)} ${d.unit||""})` : ""; return `${d.name}${ch}`; }
     if(key==="bills") return `บิล ${d.no}${d.status==="void"?" (ยกเลิกบิล)":""} • ${(d.items||[]).map(x=>`${x.name} ${fmtNum(x.qty)}`).join(", ")}`;
+    if(key==="semiOrders") return `${d.name} ${fmtNum(d.rounds)} รอบ • ${(PO_ST[d.status]||PO_ST.todo)[1]}`;
     if(key==="prodOrders") return `${d.name} ${fmtNum(d.rounds)} รอบ • ${(PO_ST[d.status]||PO_ST.todo)[1]}`;
     if(key==="prepJobs") return `${d.name} ${q(d)}`;
     if(key==="users") return `${d.name}${d.roleId?` • ${(roleById(d.roleId)||{}).name||""}`:""}${d.status==="suspended"?" (ระงับ)":""}`;
